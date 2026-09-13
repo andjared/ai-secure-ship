@@ -23,6 +23,52 @@ docker-compose up
 
 Ollama must be installed and running on the host separately (`ollama serve`), reachable from the backend container at `host.docker.internal:11434`.
 
+## Running locally without Docker
+
+Postgres can stay in Docker while the backend and frontend run natively — useful for live code reload.
+
+### Backend
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Keep Postgres running via Docker (from the repo root):
+
+```bash
+docker compose up -d postgres
+```
+
+Set env vars (these differ from the in-container values — `host.docker.internal` only resolves inside a container):
+
+```bash
+export DATABASE_URL=postgresql://user:pass@localhost:5432/secureship
+export OLLAMA_HOST=http://localhost:11434
+```
+
+Then run with live reload:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Ollama must still be running on the host (`ollama serve`), same as the Docker path.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Serves on http://localhost:3000, same as the Docker path.
+
+> Don't run both the Docker `backend`/`frontend` containers and the native processes at the same time — they'd conflict on ports 8000/3000.
+
 ## Repo layout
 
 ```text
