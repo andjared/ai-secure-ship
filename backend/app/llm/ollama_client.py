@@ -9,15 +9,20 @@ OLLAMA_HOST = os.environ.get(
 )
 
 
-def chat(message: str, model: str = "qwen3:8b") -> str:
+def chat(
+    message: str,
+    history: list[dict] | None = None,
+    model: str = "qwen3:8b",
+) -> str:
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend(history or [])
+    messages.append({"role": "user", "content": message})
+
     response = httpx.post(
         f"{OLLAMA_HOST}/api/chat",
         json={
             "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": message},
-            ],
+            "messages": messages,
             "stream": False,
         },
         timeout=60,
