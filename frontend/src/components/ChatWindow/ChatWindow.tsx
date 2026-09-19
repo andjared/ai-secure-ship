@@ -1,33 +1,55 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import './ChatWindow.css'
+import { useState } from "react";
+import type { FormEvent } from "react";
+import "./ChatWindow.css";
+import { useSendChatMessage } from "../../api/generated/chat";
 
 interface Message {
-  role: 'user' | 'assistant'
-  content: string
+  role: "user" | "assistant";
+  content: string;
 }
 
 export function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      role: 'assistant',
+      role: "assistant",
       content: "Hi! I'm the SecureShip assistant. Ask me about your shipment.",
     },
-  ])
-  const [draft, setDraft] = useState('')
+  ]);
+  const [sessionId, setSessionId] = useState<string | null>(() => sessionStorage.getItem("chat_session_id"));
+  const [draft, setDraft] = useState("");
+
+  const { mutate, isPending } = useSendChatMessage();
 
   function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    const text = draft.trim()
-    if (!text) return
+    event.preventDefault();
+    const text = draft?.trim();
+    if (!text) return;
 
-    // TODO: replace with a real POST /chat call to the backend once the
-    // Ollama-backed endpoint exists (Week 1, Day 2+). Echoing for now.
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: text },
-      { role: 'assistant', content: `You said: "${text}"` },
-    ])
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+
+    mutate(
+      { data: { message: text, session_id: sessionId } },
+      {
+        onSuccess: (response) => {
+          const { reply, session_id } = response.data;
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: reply },
+          ]);
+          setSessionId(session_id);
+          sessionStorage.setItem("chat_session_id", session_id);
+        },
+        onError: () => {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Something went wrong — please try again.",
+            },
+          ]);
+        },
+      },
+    ); 
     setDraft('')
   }
 
@@ -36,7 +58,10 @@ export function ChatWindow() {
       <div className="chat-window__header">SecureShip Support</div>
       <div className="chat-window__messages">
         {messages.map((message, index) => (
-          <div key={index} className={`chat-message chat-message--${message.role}`}>
+          <div
+            key={index}
+            className={`chat-message chat-message--${message.role}`}
+          >
             {message.content}
           </div>
         ))}
@@ -47,11 +72,12 @@ export function ChatWindow() {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Type a message..."
+          disabled={isPending}
         />
-        <button className="chat-window__send" type="submit">
+        <button className="chat-window__send" type="submit" disabled={isPending}>
           Send
         </button>
       </form>
     </div>
-  )
+  );
 }

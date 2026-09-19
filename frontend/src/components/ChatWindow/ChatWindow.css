@@ -65,3 +65,6 @@
   color: white;
   cursor: pointer;
 }
+.chat-window__send:disabled{
+  cursor: not-allowed;
+}
