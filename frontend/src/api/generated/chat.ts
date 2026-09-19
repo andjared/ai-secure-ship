@@ -30,12 +30,16 @@ import type {
   AxiosResponse
 } from 'axios';
 
+export type ChatRequestSessionId = string | null;
+
 export interface ChatRequest {
   message: string;
+  session_id?: ChatRequestSessionId;
 }
 
 export interface ChatResponse {
   reply: string;
+  session_id: string;
 }
 
 export interface HTTPValidationError {
