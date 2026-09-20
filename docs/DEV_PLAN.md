@@ -1,6 +1,6 @@
 # SecureShip — Development Plan
 
-A week-by-week task list distilled from [`REQUIREMENTS.md`](./REQUIREMENTS.md) (Section 8, with supporting requirements from Sections 4–6). Each section below covers one build week: its goal, its task checklist, and what the following Monday's milestone demo should show. For the *why* behind any task, follow the section references back into the source doc.
+A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) (Section 8, with supporting requirements from Sections 4–6). Each section below covers one build week: its goal, its task checklist, and what the following Monday's milestone demo should show. For the *why* behind any task, follow the section references back into the source doc.
 
 ---
 
