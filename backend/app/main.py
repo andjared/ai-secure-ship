@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.session import Base, engine
-from app.models import chat_session  # noqa: F401
+from app.models import chat_session, customer, package, shipment  # noqa: F401
 from app.routes import chat
 
 app = FastAPI(title="SecureShip API")
