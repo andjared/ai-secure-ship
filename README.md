@@ -23,6 +23,12 @@ docker-compose up
 
 Ollama must be installed and running on the host separately (`ollama serve`), reachable from the backend container at `host.docker.internal:11434`.
 
+The backend image bakes in the code at build time (no volume mount, no auto-reload), so after changing backend code rebuild and restart it:
+
+```bash
+docker compose up -d --build backend
+```
+
 ## Running locally without Docker
 
 Postgres can stay in Docker while the backend and frontend run natively — useful for live code reload.

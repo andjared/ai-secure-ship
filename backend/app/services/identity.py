@@ -113,6 +113,28 @@ def match_customer(
     return matches[0]
 
 
+def check_collected_identity(db: Session, session: ChatSession) -> bool:
+    """Match the four collected details and move the session on a hit.
+
+    A hit moves `collecting_identity` to `code_sent` without setting
+    `customer_id`; that only happens once the code is verified. A miss clears
+    the details so the visitor starts over. Returns whether it matched.
+    """
+    match = match_customer(
+        db,
+        first_name=session.pending_identity["first_name"],
+        last_name=session.pending_identity["last_name"],
+        address=session.pending_identity["address"],
+        phone_number=session.pending_identity["phone_number"],
+    )
+    if match is None:
+        session.pending_identity = {}
+        return False
+
+    session.state = SessionState.CODE_SENT
+    return True
+
+
 def _appears_in_message(field: str, value: str, message: str) -> bool:
     if field == "phone_number":
         wanted = _normalize_phone(value)

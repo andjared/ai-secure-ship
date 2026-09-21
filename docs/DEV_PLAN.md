@@ -36,7 +36,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 
 **Tasks**
 - [x] Conversational identity collection (name, address, phone) implemented (Epic B)
-- [ ] Identity matching against the Customer table, with neutral failure messaging — never "no customer found" (Epic B3, avoids an enumeration/privacy leak)
+- [x] Identity matching against the Customer table, with neutral failure messaging — never "no customer found" (Epic B3, avoids an enumeration/privacy leak)
 - [ ] Mock 6-digit code generation tied to session, with expiry and attempt limits (Epic C)
 - [ ] On-demand modal triggers correctly when the conversation reaches that state (not pre-rendered on page load)
 - [ ] Code verification endpoint implemented; session transitions to "Verified"

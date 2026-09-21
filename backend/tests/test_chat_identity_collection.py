@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -6,7 +8,19 @@ from app.db.session import SessionLocal
 from app.llm import ollama_client
 from app.main import app
 from app.models.chat_session import ChatSession, SessionState
-from app.services.identity import IDENTITY_COLLECTED_MESSAGE
+from app.models.customer import Customer
+from app.services.identity import (
+    IDENTITY_COLLECTED_MESSAGE,
+    IDENTITY_NOT_VERIFIED_MESSAGE,
+)
+
+JANE = {
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "address": "1234 Oak Ave, Austin, TX 78701",
+    "phone_number": "555 123 4567",
+}
+JANE_MESSAGE = "Jane Doe, 1234 Oak Ave, Austin, TX 78701, 555 123 4567"
 
 
 @pytest.fixture
@@ -16,6 +30,20 @@ def client():
     # chat sessions to the test database.
     with SessionLocal() as db:
         db.execute(text("DELETE FROM chat_sessions"))
+        db.commit()
+
+
+@pytest.fixture
+def jane_customer():
+    # The route uses its own DB session, so the customer has to be committed.
+    with SessionLocal() as db:
+        customer = Customer(**JANE)
+        db.add(customer)
+        db.commit()
+        customer_id = customer.id
+    yield customer_id
+    with SessionLocal() as db:
+        db.execute(text("DELETE FROM customers WHERE id = :id"), {"id": customer_id})
         db.commit()
 
 
@@ -95,27 +123,106 @@ def test_partial_details_are_stored_and_only_the_rest_is_requested(
     assert "first name" not in instructions
 
 
-def test_all_four_details_in_one_message_get_the_fixed_acknowledgement(
-    client, fake_model
+def test_all_four_matching_details_in_one_message_move_to_code_sent(
+    client, fake_model, jane_customer
 ):
-    fake_model.extraction = {
-        "asks_about_shipment": True,
-        "first_name": "Jane",
-        "last_name": "Doe",
-        "address": "1234 Oak Ave, Austin, TX 78701",
-        "phone_number": "555 123 4567",
-    }
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
 
-    body = send(
-        client,
-        "Jane Doe, 1234 Oak Ave, Austin, TX 78701, 555 123 4567 - where's my package?",
-    )
+    body = send(client, f"{JANE_MESSAGE} - where's my package?")
 
     assert body["reply"] == IDENTITY_COLLECTED_MESSAGE
     session = load_session(body["session_id"])
-    assert session.state == SessionState.COLLECTING_IDENTITY
+    assert session.state == SessionState.CODE_SENT
+    assert session.customer_id is None
     assert len(session.pending_identity) == 4
     assert fake_model.replies_seen == []
+
+
+def test_matching_details_spread_over_turns_move_to_code_sent(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {"asks_about_shipment": True}
+    session_id = send(client, "where's my package?")["session_id"]
+
+    fake_model.extraction = {"first_name": "Jane", "last_name": "Doe"}
+    send(client, "Jane Doe", session_id)
+    fake_model.extraction = {
+        "address": JANE["address"],
+        "phone_number": JANE["phone_number"],
+    }
+    body = send(client, f"{JANE['address']} {JANE['phone_number']}", session_id)
+
+    assert body["reply"] == IDENTITY_COLLECTED_MESSAGE
+    assert load_session(session_id).state == SessionState.CODE_SENT
+
+
+def test_wrong_detail_gets_the_neutral_message_and_clears_the_details(
+    client, fake_model, jane_customer
+):
+    wrong_phone = {**JANE, "phone_number": "555 999 0000"}
+    fake_model.extraction = {"asks_about_shipment": True, **wrong_phone}
+
+    body = send(client, JANE_MESSAGE.replace("555 123 4567", "555 999 0000"))
+
+    assert body["reply"] == IDENTITY_NOT_VERIFIED_MESSAGE
+    session = load_session(body["session_id"])
+    assert session.state == SessionState.COLLECTING_IDENTITY
+    assert session.customer_id is None
+    assert session.pending_identity == {}
+    assert fake_model.replies_seen == []
+
+
+def test_unknown_person_and_wrong_phone_get_the_same_reply(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {
+        "asks_about_shipment": True,
+        **{**JANE, "phone_number": "555 999 0000"},
+    }
+    wrong_phone_reply = send(
+        client, JANE_MESSAGE.replace("555 123 4567", "555 999 0000")
+    )["reply"]
+
+    stranger = {
+        "first_name": "Zed",
+        "last_name": "Nobody",
+        "address": "1 Nowhere Rd",
+        "phone_number": "555 000 1111",
+    }
+    fake_model.extraction = {"asks_about_shipment": True, **stranger}
+    unknown_reply = send(
+        client, "Zed Nobody, 1 Nowhere Rd, 555 000 1111"
+    )["reply"]
+
+    assert wrong_phone_reply == unknown_reply == IDENTITY_NOT_VERIFIED_MESSAGE
+
+
+def test_retry_after_a_miss_can_still_verify(client, fake_model, jane_customer):
+    fake_model.extraction = {
+        "asks_about_shipment": True,
+        **{**JANE, "phone_number": "555 999 0000"},
+    }
+    session_id = send(
+        client, JANE_MESSAGE.replace("555 123 4567", "555 999 0000")
+    )["session_id"]
+
+    fake_model.extraction = JANE
+    body = send(client, JANE_MESSAGE, session_id)
+
+    assert body["reply"] == IDENTITY_COLLECTED_MESSAGE
+    assert load_session(session_id).state == SessionState.CODE_SENT
+
+
+def test_matching_logs_no_identity_details(
+    client, fake_model, jane_customer, caplog
+):
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
+
+    with caplog.at_level(logging.DEBUG):
+        send(client, JANE_MESSAGE)
+
+    for detail in ("Jane", "Doe", "Oak", "123 4567", "1234567"):
+        assert detail not in caplog.text
 
 
 def test_asking_to_be_verified_changes_neither_state_nor_customer(

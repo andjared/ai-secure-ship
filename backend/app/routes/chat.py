@@ -71,8 +71,10 @@ def send_chat_message(
             )
             if missing:
                 extra_instructions = identity_collection_prompt(missing)
-            else:
+            elif identity.check_collected_identity(db, session):
                 reply = identity.IDENTITY_COLLECTED_MESSAGE
+            else:
+                reply = identity.IDENTITY_NOT_VERIFIED_MESSAGE
 
     if reply is None:
         reply = ollama_client.chat(
