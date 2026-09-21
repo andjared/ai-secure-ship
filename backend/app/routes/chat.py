@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.llm import ollama_client
-from app.models.chat_session import ChatSession
+from app.llm.system_prompt import identity_collection_prompt
+from app.models.chat_session import ChatSession, SessionState
+from app.services import identity
 
 router = APIRouter()
 
@@ -31,7 +33,12 @@ def send_chat_message(
         if session is None:
             raise HTTPException(status_code=404, detail="Session not found")
     else:
-        session = ChatSession(transcript=[])
+        # Column defaults only apply at INSERT, but the state is read below.
+        session = ChatSession(
+            transcript=[],
+            state=SessionState.ANONYMOUS,
+            pending_identity={},
+        )
         db.add(session)
 
     history = [
@@ -50,7 +57,29 @@ def send_chat_message(
         ]
 
     record_turn("user", request.message)
-    reply = ollama_client.chat(request.message, history=history)
+
+    extra_instructions = None
+    reply = None
+    if session.state in identity.COLLECTING_STATES:
+        extracted = ollama_client.extract_identity(
+            request.message, history=history
+        )
+        identity.collect_identity(session, extracted, request.message)
+        if session.state == SessionState.COLLECTING_IDENTITY:
+            missing = identity.list_missing_identity_labels(
+                session.pending_identity
+            )
+            if missing:
+                extra_instructions = identity_collection_prompt(missing)
+            else:
+                reply = identity.IDENTITY_COLLECTED_MESSAGE
+
+    if reply is None:
+        reply = ollama_client.chat(
+            request.message,
+            history=history,
+            extra_instructions=extra_instructions,
+        )
     record_turn("assistant", reply)
 
     db.commit()

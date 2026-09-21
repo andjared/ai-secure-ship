@@ -30,6 +30,31 @@ CITIES = [
     ("Atlanta", "GA"), ("Dallas", "TX"), ("Berlin", "DE"), ("Amsterdam", "NL"),
     ("Lisbon", "PT"), ("Dublin", "IE"), ("Vienna", "AT"),
 ]
+SERBIAN_FIRST_NAMES = [
+    "Marko", "Nikola", "Stefan", "Milan", "Nemanja", "Luka", "Đorđe",
+    "Aleksandar", "Lazar", "Vladimir", "Jelena", "Milica", "Ana", "Marija",
+    "Jovana", "Ivana", "Teodora", "Katarina", "Dragana", "Tijana",
+]
+SERBIAN_LAST_NAMES = [
+    "Petrović", "Jovanović", "Nikolić", "Đorđević", "Ilić", "Stanković",
+    "Pavlović", "Milošević", "Marković", "Popović", "Stojanović", "Simić",
+    "Todorović", "Kovačević", "Lazić", "Ćirić", "Vasić", "Mitrović",
+    "Radović", "Đurđević",
+]
+SERBIAN_STREET_NAMES = [
+    "Knez Mihailova", "Bulevar kralja Aleksandra", "Nemanjina", "Cara Dušana",
+    "Vojvode Stepe", "Kralja Milana", "Svetog Save", "Jovana Cvijića",
+    "Cara Lazara", "Njegoševa",
+]
+# (city, postal code)
+SERBIAN_CITIES = [
+    ("Beograd", "11000"), ("Novi Sad", "21000"), ("Niš", "18000"),
+    ("Kragujevac", "34000"), ("Subotica", "24000"), ("Čačak", "32000"),
+    ("Kraljevo", "36000"), ("Šabac", "15000"), ("Zrenjanin", "23000"),
+    ("Pančevo", "26000"),
+]
+SERBIAN_MOBILE_PREFIXES = [60, 61, 62, 63, 64, 65, 66, 69]
+ROUTE_CITIES = [city for city, _ in CITIES] + [city for city, _ in SERBIAN_CITIES]
 PACKAGE_ITEMS = [
     "Wireless Headphones", "Running Shoes", "Laptop Charger", "Coffee Maker",
     "Yoga Mat", "Desk Lamp", "Bluetooth Speaker", "Backpack", "Water Bottle",
@@ -38,6 +63,7 @@ PACKAGE_ITEMS = [
 ]
 
 NUM_CUSTOMERS = 30
+NUM_SERBIAN_CUSTOMERS = 10
 STATUS_WEIGHTS = {
     ShipmentStatus.IN_TRANSIT: 35,
     ShipmentStatus.DELIVERED: 35,
@@ -49,6 +75,39 @@ STATUS_WEIGHTS = {
 
 def mock_phone_number() -> str:
     return f"+1{random.randint(2_000_000_000, 9_999_999_999)}"
+
+
+def mock_serbian_phone_number() -> str:
+    prefix = random.choice(SERBIAN_MOBILE_PREFIXES)
+    return f"+381{prefix}{random.randint(1_000_000, 9_999_999)}"
+
+
+def mock_serbian_address() -> str:
+    city, postal_code = random.choice(SERBIAN_CITIES)
+    return (
+        f"{random.choice(SERBIAN_STREET_NAMES)} {random.randint(1, 150)}, "
+        f"{postal_code} {city}"
+    )
+
+
+def mock_us_customer() -> Customer:
+    return Customer(
+        id=uuid.uuid4(),
+        first_name=random.choice(FIRST_NAMES),
+        last_name=random.choice(LAST_NAMES),
+        phone_number=mock_phone_number(),
+        address=mock_address(),
+    )
+
+
+def mock_serbian_customer() -> Customer:
+    return Customer(
+        id=uuid.uuid4(),
+        first_name=random.choice(SERBIAN_FIRST_NAMES),
+        last_name=random.choice(SERBIAN_LAST_NAMES),
+        phone_number=mock_serbian_phone_number(),
+        address=mock_serbian_address(),
+    )
 
 
 def mock_tracking_number() -> str:
@@ -76,23 +135,17 @@ def seed() -> None:
         db.query(Customer).delete()
 
         customers = [
-            Customer(
-                id=uuid.uuid4(),
-                first_name=random.choice(FIRST_NAMES),
-                last_name=random.choice(LAST_NAMES),
-                phone_number=mock_phone_number(),
-                address=mock_address(),
-            )
-            for _ in range(NUM_CUSTOMERS)
-        ]
+            mock_us_customer()
+            for _ in range(NUM_CUSTOMERS - NUM_SERBIAN_CUSTOMERS)
+        ] + [mock_serbian_customer() for _ in range(NUM_SERBIAN_CUSTOMERS)]
         db.add_all(customers)
         db.flush()
 
         shipment_count = 0
         for customer in customers:
             for _ in range(random.randint(1, 3)):
-                origin = random.choice(CITIES)[0]
-                destination = random.choice([c[0] for c in CITIES if c[0] != origin])
+                origin = random.choice(ROUTE_CITIES)
+                destination = random.choice([c for c in ROUTE_CITIES if c != origin])
                 shipment = Shipment(
                     id=uuid.uuid4(),
                     customer_id=customer.id,

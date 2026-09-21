@@ -43,3 +43,6 @@ class ChatSession(Base):
         DateTime(timezone=True), nullable=True
     )
     transcript: Mapped[list] = mapped_column(JSONB, default=list)
+    # Unverified details the visitor typed, waiting to be matched. Reassign a
+    # new dict on every change so SQLAlchemy detects it.
+    pending_identity: Mapped[dict] = mapped_column(JSONB, default=dict)

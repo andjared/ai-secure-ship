@@ -9,18 +9,18 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 **Goal:** Repo exists, runs, and has a real conversation with the local model end-to-end — with zero gating yet (anyone can ask anything; that's intentional at this stage, since gating is Week 2's job).
 
 **Tasks**
-- [ ] Repo created, README stub, `/docs` folder structure in place (Section 6.6 skeleton as a reference, not a copy-paste)
-- [ ] `docker-compose.yml` brings up frontend, backend, and Postgres containers (Section 4.7) — Ollama installed on the host, not yet wired in
-- [ ] Backend skeleton running with a health-check endpoint
-- [ ] Frontend skeleton running, renders a chat window UI (hardcoded/echo responses are fine as a starting point)
-- [ ] Mock data generation script written and run (Section 4.4 schema: Customer/Shipment/Package), seeded into the Postgres container
-- [ ] Mermaid diagrams from Section 6 copied into team repo as the starting reference
-- [ ] Ollama installed, model pulled (`qwen3:8b` recommended; `llama3.2:3b` fallback for constrained hardware — Section 9.1)
-- [ ] Backend calls Ollama's API and returns model responses through the chat endpoint
-- [ ] Orval configured and pointed at the backend's `/openapi.json` (Section 4.8) — generate the first real React Query hooks (HTTP path) or types (WS path) now, rather than hand-writing fetch calls "temporarily"
-- [ ] Every turn gets persisted to the `ChatSession.transcript` JSONB column (Section 4.6) — wire this up now while the flow is simple
-- [ ] Frontend chat window is fully wired (send/receive, message history rendered)
-- [ ] Basic system prompt written, defining the assistant's role/persona (not yet enforcing any gate)
+- [x] Repo created, README stub, `/docs` folder structure in place (Section 6.6 skeleton as a reference, not a copy-paste)
+- [x] `docker-compose.yml` brings up frontend, backend, and Postgres containers (Section 4.7) — Ollama installed on the host, not yet wired in
+- [x] Backend skeleton running with a health-check endpoint
+- [x] Frontend skeleton running, renders a chat window UI (hardcoded/echo responses are fine as a starting point)
+- [x] Mock data generation script written and run (Section 4.4 schema: Customer/Shipment/Package), seeded into the Postgres container
+- [x] Mermaid diagrams from Section 6 copied into team repo as the starting reference
+- [x] Ollama installed, model pulled (`qwen3:8b` recommended; `llama3.2:3b` fallback for constrained hardware — Section 9.1)
+- [x] Backend calls Ollama's API and returns model responses through the chat endpoint
+- [x] Orval configured and pointed at the backend's `/openapi.json` (Section 4.8) — generate the first real React Query hooks (HTTP path) or types (WS path) now, rather than hand-writing fetch calls "temporarily"
+- [x] Every turn gets persisted to the `ChatSession.transcript` JSONB column (Section 4.6) — wire this up now while the flow is simple
+- [x] Frontend chat window is fully wired (send/receive, message history rendered)
+- [x] Basic system prompt written, defining the assistant's role/persona (not yet enforcing any gate)
 
 **Notes**
 - Ollama stays on the host, never in Docker — Docker Desktop on macOS can't pass Metal GPU acceleration through to a container (Section 4.7).
@@ -35,7 +35,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 **Goal:** The identity-gating state machine (Section 6.2) is implemented and enforced.
 
 **Tasks**
-- [ ] Conversational identity collection (name, address, phone) implemented (Epic B)
+- [x] Conversational identity collection (name, address, phone) implemented (Epic B)
 - [ ] Identity matching against the Customer table, with neutral failure messaging — never "no customer found" (Epic B3, avoids an enumeration/privacy leak)
 - [ ] Mock 6-digit code generation tied to session, with expiry and attempt limits (Epic C)
 - [ ] On-demand modal triggers correctly when the conversation reaches that state (not pre-rendered on page load)
@@ -102,7 +102,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 - [ ] llama.cpp instead of/alongside Ollama
 - [ ] Full Docker Compose tier — containerize Ollama itself (Section 4.7 bonus, diagram in 6.5) — note: CPU-only inside the container, genuinely slower, a container-wiring flex rather than a performance upgrade
 - [ ] Admin chat session viewer — a functionality-only admin page listing past `ChatSession` rows and transcripts (Section 4.6)
-- [ ] Codegen-suggestion Agent Skill (Section 4.8) — a `SKILL.md` that notices backend schema changes and *suggests* (never auto-runs) regenerating the frontend's Orval output
+- [x] Codegen-suggestion Agent Skill (Section 4.8) — a `SKILL.md` that notices backend schema changes and *suggests* (never auto-runs) regenerating the frontend's Orval output
 
 **Notes**
 - A regenerated diagram that doesn't match the actual code is a documentation bug, worth calling out as one.
