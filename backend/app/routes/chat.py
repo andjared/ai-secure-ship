@@ -1,3 +1,4 @@
+import enum
 import uuid
 from datetime import datetime, timezone
 
@@ -19,9 +20,16 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
 
 
+class ChatEvent(str, enum.Enum):
+    """Something the client should react to after this turn."""
+
+    CODE_SENT = "code_sent"
+
+
 class ChatResponse(BaseModel):
     reply: str
     session_id: str
+    event: ChatEvent | None = None
 
 
 @router.post("/chat", operation_id="sendChatMessage")
@@ -89,4 +97,9 @@ def send_chat_message(
 
     db.commit()
 
-    return ChatResponse(reply=reply, session_id=str(session.id))
+    event = (
+        ChatEvent.CODE_SENT
+        if verification.is_waiting_for_code(session.state)
+        else None
+    )
+    return ChatResponse(reply=reply, session_id=str(session.id), event=event)

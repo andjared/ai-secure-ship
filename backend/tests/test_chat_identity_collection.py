@@ -278,3 +278,50 @@ def test_failed_extraction_falls_back_to_plain_chat(client, fake_model):
     session = load_session(body["session_id"])
     assert session.state == SessionState.ANONYMOUS
     assert session.pending_identity == {}
+
+
+def test_general_and_partial_turns_send_no_event(client, fake_model):
+    fake_model.extraction = {"asks_about_shipment": False}
+    body = send(client, "how long does shipping take?")
+    assert body["event"] is None
+
+    fake_model.extraction = {"asks_about_shipment": True}
+    body = send(client, "where's my package?", body["session_id"])
+    assert body["event"] is None
+
+    fake_model.extraction = {"first_name": "Jane", "last_name": "Doe"}
+    body = send(client, "Jane Doe", body["session_id"])
+    assert body["event"] is None
+
+
+def test_matching_details_send_the_code_sent_event(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
+
+    body = send(client, JANE_MESSAGE)
+
+    assert body["event"] == "code_sent"
+
+
+def test_code_sent_event_repeats_while_waiting_for_the_code(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
+    session_id = send(client, JANE_MESSAGE)["session_id"]
+
+    body = send(client, "I closed the popup, what now?", session_id)
+
+    assert body["event"] == "code_sent"
+
+
+def test_wrong_details_send_no_event(client, fake_model, jane_customer):
+    fake_model.extraction = {
+        "asks_about_shipment": True,
+        **{**JANE, "phone_number": "555 999 0000"},
+    }
+
+    body = send(client, JANE_MESSAGE.replace("555 123 4567", "555 999 0000"))
+
+    assert body["reply"] == IDENTITY_NOT_VERIFIED_MESSAGE
+    assert body["event"] is None

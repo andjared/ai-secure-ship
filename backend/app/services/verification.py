@@ -4,6 +4,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from app.models.chat_session import SessionState
+
 logger = logging.getLogger(__name__)
 
 CODE_LENGTH = 6
@@ -48,3 +50,8 @@ def generate_and_send_code(session_id: uuid.UUID) -> None:
 
 def get_verification_code(session_id: uuid.UUID) -> VerificationCode | None:
     return _codes.get(session_id)
+
+
+def is_waiting_for_code(state: SessionState) -> bool:
+    """Whether the visitor should be shown the code entry modal."""
+    return state in (SessionState.CODE_SENT, SessionState.AWAITING_CODE)

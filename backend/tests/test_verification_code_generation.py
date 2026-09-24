@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from app.models.chat_session import SessionState
 from app.services import verification
 
 
@@ -71,3 +72,9 @@ def test_only_the_mock_send_line_is_logged(caplog):
     message = records[0].getMessage()
     assert str(session_id) in message
     assert verification.get_verification_code(session_id).code in message
+
+
+@pytest.mark.parametrize("state", list(SessionState))
+def test_only_code_states_are_waiting_for_a_code(state):
+    expected = state in (SessionState.CODE_SENT, SessionState.AWAITING_CODE)
+    assert verification.is_waiting_for_code(state) is expected
