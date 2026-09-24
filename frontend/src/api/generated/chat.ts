@@ -30,6 +30,17 @@ import type {
   AxiosResponse
 } from 'axios';
 
+/**
+ * Something the client should react to after this turn.
+ */
+export type ChatEvent = typeof ChatEvent[keyof typeof ChatEvent];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChatEvent = {
+  code_sent: 'code_sent',
+} as const;
+
 export type ChatRequestSessionId = string | null;
 
 export interface ChatRequest {
@@ -37,9 +48,12 @@ export interface ChatRequest {
   session_id?: ChatRequestSessionId;
 }
 
+export type ChatResponseEvent = ChatEvent | null;
+
 export interface ChatResponse {
   reply: string;
   session_id: string;
+  event?: ChatResponseEvent;
 }
 
 export interface HTTPValidationError {

@@ -1,0 +1,110 @@
+.code-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(46, 36, 89, 0.35);
+}
+
+.code-modal__dialog {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 40px 24px 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+
+.code-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text);
+  cursor: pointer;
+}
+.code-modal__close:hover {
+  color: var(--text-title);
+}
+
+.code-modal__title {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  color: var(--text-title);
+}
+
+.code-modal__text {
+  margin: 0 0 24px;
+  color: var(--text);
+}
+
+.code-modal__digits {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.code-modal__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 16px; /* prevents iOS zoom on focus */
+  cursor: text;
+}
+
+.code-modal__digit {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 56px;
+  background: var(--header-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-title);
+}
+.code-modal__digits:focus-within .code-modal__digit--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.code-modal__verify {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #9b8cf0, var(--accent));
+  color: white;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.code-modal__verify:hover:not(:disabled) {
+  background: linear-gradient(90deg, #8b7aee, var(--accent-hover));
+}
+.code-modal__verify:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 400px) {
+  .code-modal__digits {
+    gap: 6px;
+  }
+  .code-modal__digit {
+    width: 40px;
+    height: 48px;
+  }
+}

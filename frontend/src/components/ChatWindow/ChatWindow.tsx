@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import "./ChatWindow.css";
-import { useSendChatMessage } from "../../api/generated/chat";
+import { ChatEvent, useSendChatMessage } from "../../api/generated/chat";
+import { CodeModal } from "../CodeModal/CodeModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -15,8 +16,11 @@ export function ChatWindow() {
       content: "Hi! I'm the SecureShip assistant. Ask me about your shipment.",
     },
   ]);
-  const [sessionId, setSessionId] = useState<string | null>(() => sessionStorage.getItem("chat_session_id"));
+  const [sessionId, setSessionId] = useState<string | null>(() =>
+    sessionStorage.getItem("chat_session_id"),
+  );
   const [draft, setDraft] = useState("");
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const { mutate, isPending } = useSendChatMessage();
 
@@ -31,13 +35,16 @@ export function ChatWindow() {
       { data: { message: text, session_id: sessionId } },
       {
         onSuccess: (response) => {
-          const { reply, session_id } = response.data;
+          const { reply, session_id, event } = response.data;
           setMessages((prev) => [
             ...prev,
             { role: "assistant", content: reply },
           ]);
           setSessionId(session_id);
           sessionStorage.setItem("chat_session_id", session_id);
+          if (event === ChatEvent.code_sent) {
+            setIsCodeModalOpen(true);
+          }
         },
         onError: () => {
           setMessages((prev) => [
@@ -49,8 +56,8 @@ export function ChatWindow() {
           ]);
         },
       },
-    ); 
-    setDraft('')
+    );
+    setDraft("");
   }
 
   return (
@@ -93,6 +100,9 @@ export function ChatWindow() {
           Send
         </button>
       </form>
+      {isCodeModalOpen && (
+        <CodeModal onClose={() => setIsCodeModalOpen(false)} />
+      )}
     </div>
   );
 }
