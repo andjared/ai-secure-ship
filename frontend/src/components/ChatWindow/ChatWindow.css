@@ -1,11 +1,13 @@
 .chat-window {
   display: flex;
   flex-direction: column;
-  width: min(480px, 100%);
+  width: min(760px, 100%);
   height: 600px;
   margin: 40px auto;
-  border: 1px solid #ddd;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
+  box-shadow: var(--shadow);
   overflow: hidden;
   font-family: system-ui, sans-serif;
 }
@@ -13,7 +15,9 @@
 .chat-window__header {
   padding: 16px;
   font-weight: 600;
-  border-bottom: 1px solid #ddd;
+  color: var(--text-title);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .chat-window__messages {
@@ -33,38 +37,94 @@
 }
 
 .chat-message--assistant {
-  background: #f0f0f0;
+  background: var(--bubble-assistant);
+  border: 1px solid var(--bubble-assistant-border);
+  color: var(--text-h);
   align-self: flex-start;
 }
 
 .chat-message--user {
-  background: #2563eb;
+  background: var(--accent);
   color: white;
   align-self: flex-end;
+}
+
+.chat-message--typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 14px;
+}
+.chat-message--typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+.chat-message--typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.chat-message--typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message--typing span {
+    animation: none;
+    opacity: 0.7;
+  }
 }
 
 .chat-window__form {
   display: flex;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border);
 }
 
 .chat-window__input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
+}
+.chat-window__input::placeholder {
+  color: var(--text-placeholder);
+}
+.chat-window__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .chat-window__send {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
-  background: #2563eb;
+  background: var(--accent);
   color: white;
   cursor: pointer;
 }
-.chat-window__send:disabled{
+.chat-window__send:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.chat-window__send:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }

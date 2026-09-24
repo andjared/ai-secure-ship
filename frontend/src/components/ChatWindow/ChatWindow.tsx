@@ -65,6 +65,17 @@ export function ChatWindow() {
             {message.content}
           </div>
         ))}
+        {isPending && (
+          <div
+            className="chat-message chat-message--assistant chat-message--typing"
+            role="status"
+            aria-label="SecureShip assistant is typing"
+          >
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
       </div>
       <form className="chat-window__form" onSubmit={handleSubmit}>
         <input
@@ -74,7 +85,11 @@ export function ChatWindow() {
           placeholder="Type a message..."
           disabled={isPending}
         />
-        <button className="chat-window__send" type="submit" disabled={isPending}>
+        <button
+          className="chat-window__send"
+          type="submit"
+          disabled={isPending}
+        >
           Send
         </button>
       </form>
