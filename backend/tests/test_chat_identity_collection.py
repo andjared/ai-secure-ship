@@ -1,4 +1,6 @@
 import logging
+import uuid
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +11,7 @@ from app.llm import ollama_client
 from app.main import app
 from app.models.chat_session import ChatSession, SessionState
 from app.models.customer import Customer
+from app.services import verification
 from app.services.identity import (
     IDENTITY_COLLECTED_MESSAGE,
     IDENTITY_NOT_VERIFIED_MESSAGE,
@@ -136,6 +139,21 @@ def test_all_four_matching_details_in_one_message_move_to_code_sent(
     assert session.customer_id is None
     assert len(session.pending_identity) == 4
     assert fake_model.replies_seen == []
+
+
+def test_matching_details_issue_a_verification_code(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
+
+    body = send(client, f"{JANE_MESSAGE} - where's my package?")
+
+    session_id = uuid.UUID(body["session_id"])
+    entry = verification.get_verification_code(session_id)
+    assert entry is not None
+    assert len(entry.code) == 6 and entry.code.isdigit()
+    assert entry.expires_at > datetime.now(timezone.utc)
+    assert entry.attempts_remaining == verification.MAX_CODE_ATTEMPTS
 
 
 def test_matching_details_spread_over_turns_move_to_code_sent(

@@ -37,7 +37,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 **Tasks**
 - [x] Conversational identity collection (name, address, phone) implemented (Epic B)
 - [x] Identity matching against the Customer table, with neutral failure messaging — never "no customer found" (Epic B3, avoids an enumeration/privacy leak)
-- [ ] Mock 6-digit code generation tied to session, with expiry and attempt limits (Epic C)
+- [x] Mock 6-digit code generation tied to session, with expiry and attempt limits (Epic C)
 - [ ] On-demand modal triggers correctly when the conversation reaches that state (not pre-rendered on page load)
 - [ ] Code verification endpoint implemented; session transitions to "Verified"
 - [ ] Human escalation theater implemented (Epic G, Section 6.2b) — "I want to talk to a human" triggers the scripted handoff sequence from both Anonymous and Verified states
