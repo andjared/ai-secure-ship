@@ -1,14 +1,39 @@
 import { useState } from "react";
 import "./CodeModal.css";
+import { CodeCheckOutcome, useVerifyCode } from "../../api/generated/chat";
 
 interface CodeModalProps {
   onClose: () => void;
+  onResult: (reply: string) => void;
+  sessionId: string;
 }
 
 const CODE_LENGTH = 6;
 
-export function CodeModal({ onClose }: CodeModalProps) {
+export function CodeModal({ onClose, onResult, sessionId }: CodeModalProps) {
   const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+
+  const { mutate, isPending } = useVerifyCode();
+
+  const handleVerify = () => {
+    mutate(
+      { data: { session_id: sessionId, code } },
+      {
+        onSuccess: (response) => {
+          const { outcome, reply } = response.data;
+          if (outcome === CodeCheckOutcome.incorrect) {
+            setCode("");
+            setError(reply);
+          } else {
+            onResult(reply);
+          }
+        },
+        onError: () => setError("Something went wrong — please try again."),
+      },
+      
+    );
+  };
   return (
     <div className="code-modal">
       <div
@@ -36,7 +61,10 @@ export function CodeModal({ onClose }: CodeModalProps) {
             type="text"
             className="code-modal__input"
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+            onChange={(event) => {
+              setCode(event.target.value.replace(/\D/g, ""));
+              setError("");
+            }}
             maxLength={CODE_LENGTH}
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -56,10 +84,16 @@ export function CodeModal({ onClose }: CodeModalProps) {
         <button
           className="code-modal__verify"
           type="button"
-          disabled={code.length < CODE_LENGTH}
+          disabled={code.length < CODE_LENGTH || isPending}
+          onClick={handleVerify}
         >
           Verify
         </button>
+        {error && (
+          <p className="code-modal__error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

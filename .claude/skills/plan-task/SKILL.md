@@ -20,7 +20,7 @@ Produce a plan only. Do not implement anything, and do not include code, pseudoc
 
 ## 3. Inspect the current code
 - Read the files the item touches; use the Explore agent for broad searches.
-- Note what already exists, what is missing, and constraints that change the approach, such as schema created by `create_all` with no migrations, or new routes needing the Vite proxy and an Orval regeneration.
+- Note what already exists, what is missing, and constraints that change the approach, such as schema created by `create_all` with no migrations, or new routes needing an Orval regeneration.
 
 ## 4. Stay in scope
 - Plan only the requested item. Put neighboring checklist items in a short "Left for later" list instead of planning them.

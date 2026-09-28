@@ -79,13 +79,17 @@ def send_chat_message(
             )
             if missing:
                 extra_instructions = identity_collection_prompt(missing)
-            elif identity.check_collected_identity(db, session):
-                # A new session's id is only assigned on flush/INSERT.
-                db.flush()
-                verification.generate_and_send_code(session.id)
-                reply = identity.IDENTITY_COLLECTED_MESSAGE
             else:
-                reply = identity.IDENTITY_NOT_VERIFIED_MESSAGE
+                customer_id = identity.check_collected_identity(db, session)
+                if customer_id is not None:
+                    # A new session's id is only assigned on flush/INSERT.
+                    db.flush()
+                    verification.generate_and_send_code(
+                        session.id, customer_id
+                    )
+                    reply = identity.IDENTITY_COLLECTED_MESSAGE
+                else:
+                    reply = identity.IDENTITY_NOT_VERIFIED_MESSAGE
 
     if reply is None:
         reply = ollama_client.chat(

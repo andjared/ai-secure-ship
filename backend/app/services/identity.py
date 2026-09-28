@@ -113,12 +113,15 @@ def match_customer(
     return matches[0]
 
 
-def check_collected_identity(db: Session, session: ChatSession) -> bool:
+def check_collected_identity(
+    db: Session, session: ChatSession
+) -> uuid.UUID | None:
     """Match the four collected details and move the session on a hit.
 
     A hit moves `collecting_identity` to `code_sent` without setting
     `customer_id`; that only happens once the code is verified. A miss clears
-    the details so the visitor starts over. Returns whether it matched.
+    the details so the visitor starts over. Returns the matched customer id
+    (to be held with the verification code), or None on a miss.
     """
     match = match_customer(
         db,
@@ -129,10 +132,10 @@ def check_collected_identity(db: Session, session: ChatSession) -> bool:
     )
     if match is None:
         session.pending_identity = {}
-        return False
+        return None
 
     session.state = SessionState.CODE_SENT
-    return True
+    return match
 
 
 def _appears_in_message(field: str, value: str, message: str) -> bool:

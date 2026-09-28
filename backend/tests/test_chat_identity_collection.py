@@ -2,75 +2,14 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import text
-
 from app.db.session import SessionLocal
-from app.llm import ollama_client
-from app.main import app
 from app.models.chat_session import ChatSession, SessionState
-from app.models.customer import Customer
 from app.services import verification
 from app.services.identity import (
     IDENTITY_COLLECTED_MESSAGE,
     IDENTITY_NOT_VERIFIED_MESSAGE,
 )
-
-JANE = {
-    "first_name": "Jane",
-    "last_name": "Doe",
-    "address": "1234 Oak Ave, Austin, TX 78701",
-    "phone_number": "555 123 4567",
-}
-JANE_MESSAGE = "Jane Doe, 1234 Oak Ave, Austin, TX 78701, 555 123 4567"
-
-
-@pytest.fixture
-def client():
-    yield TestClient(app)
-    # The route commits, so clear the rows it created. Only these tests write
-    # chat sessions to the test database.
-    with SessionLocal() as db:
-        db.execute(text("DELETE FROM chat_sessions"))
-        db.commit()
-
-
-@pytest.fixture
-def jane_customer():
-    # The route uses its own DB session, so the customer has to be committed.
-    with SessionLocal() as db:
-        customer = Customer(**JANE)
-        db.add(customer)
-        db.commit()
-        customer_id = customer.id
-    yield customer_id
-    with SessionLocal() as db:
-        db.execute(text("DELETE FROM customers WHERE id = :id"), {"id": customer_id})
-        db.commit()
-
-
-@pytest.fixture
-def fake_model(monkeypatch):
-    """Replace both Ollama calls; `extraction` is what the model 'extracts'."""
-
-    class FakeModel:
-        extraction: dict = {}
-        replies_seen: list[dict] = []
-
-    def fake_extract(message, history=None, model="qwen3:8b"):
-        if isinstance(FakeModel.extraction, Exception):
-            raise FakeModel.extraction
-        return FakeModel.extraction
-
-    def fake_chat(message, history=None, model="qwen3:8b", extra_instructions=None):
-        FakeModel.replies_seen.append({"extra_instructions": extra_instructions})
-        return "model reply"
-
-    FakeModel.replies_seen = []
-    monkeypatch.setattr(ollama_client, "extract_identity", fake_extract)
-    monkeypatch.setattr(ollama_client, "chat", fake_chat)
-    return FakeModel
+from tests.conftest import JANE, JANE_MESSAGE
 
 
 def send(client, message, session_id=None):
@@ -154,6 +93,7 @@ def test_matching_details_issue_a_verification_code(
     assert len(entry.code) == 6 and entry.code.isdigit()
     assert entry.expires_at > datetime.now(timezone.utc)
     assert entry.attempts_remaining == verification.MAX_CODE_ATTEMPTS
+    assert entry.customer_id == jane_customer
 
 
 def test_matching_details_spread_over_turns_move_to_code_sent(

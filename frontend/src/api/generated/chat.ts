@@ -56,6 +56,16 @@ export interface ChatResponse {
   event?: ChatResponseEvent;
 }
 
+export type CodeCheckOutcome = typeof CodeCheckOutcome[keyof typeof CodeCheckOutcome];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CodeCheckOutcome = {
+  verified: 'verified',
+  incorrect: 'incorrect',
+  restart: 'restart',
+} as const;
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -66,6 +76,20 @@ export interface ValidationError {
   loc: ValidationErrorLocItem[];
   msg: string;
   type: string;
+}
+
+export interface VerifyCodeRequest {
+  session_id: string;
+  /** @pattern ^[0-9]{6}$ */
+  code: string;
+}
+
+export type VerifyCodeResponseAttemptsRemaining = number | null;
+
+export interface VerifyCodeResponse {
+  outcome: CodeCheckOutcome;
+  reply: string;
+  attempts_remaining?: VerifyCodeResponseAttemptsRemaining;
 }
 
 export type HealthHealthGet200 = {[key: string]: string};
@@ -128,6 +152,68 @@ export const useSendChatMessage = <TError = AxiosError<HTTPValidationError>,
       > => {
 
       const mutationOptions = getSendChatMessageMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Verify Code
+ */
+export const verifyCode = (
+    verifyCodeRequest: VerifyCodeRequest, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VerifyCodeResponse>> => {
+    
+    
+    return axios.default.post(
+      `/verify-code`,
+      verifyCodeRequest,options
+    );
+  }
+
+
+
+export const getVerifyCodeMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext> => {
+
+const mutationKey = ['verifyCode'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyCode>>, {data: VerifyCodeRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyCode(data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyCodeMutationResult = NonNullable<Awaited<ReturnType<typeof verifyCode>>>
+    export type VerifyCodeMutationBody = VerifyCodeRequest
+    export type VerifyCodeMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Verify Code
+ */
+export const useVerifyCode = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyCode>>,
+        TError,
+        {data: VerifyCodeRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getVerifyCodeMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

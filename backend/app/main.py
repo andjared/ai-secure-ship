@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.session import Base, engine
 from app.models import chat_session, customer, package, shipment  # noqa: F401
-from app.routes import chat
+from app.routes import chat, verify
 
 # Without this, the root logger defaults to WARNING and the mock 2FA
 # "console/log output" (Epic C1) never reaches the terminal.
@@ -21,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(verify.router)
 
 
 @app.on_event("startup")

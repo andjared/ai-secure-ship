@@ -100,8 +100,18 @@ export function ChatWindow() {
           Send
         </button>
       </form>
-      {isCodeModalOpen && (
-        <CodeModal onClose={() => setIsCodeModalOpen(false)} />
+      {sessionId && isCodeModalOpen && (
+        <CodeModal
+          sessionId={sessionId}
+          onClose={() => setIsCodeModalOpen(false)}
+          onResult={(reply) => {
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: reply },
+            ]);
+            setIsCodeModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

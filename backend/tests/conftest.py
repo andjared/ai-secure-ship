@@ -42,8 +42,22 @@ def _ensure_test_database() -> None:
 
 _ensure_test_database()
 
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
+
 from app.db.session import Base, SessionLocal, engine  # noqa: E402
+from app.llm import ollama_client  # noqa: E402
+from app.main import app  # noqa: E402
 from app.models import chat_session, customer, package, shipment  # noqa: E402,F401
+from app.models.customer import Customer  # noqa: E402
+
+JANE = {
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "address": "1234 Oak Ave, Austin, TX 78701",
+    "phone_number": "555 123 4567",
+}
+JANE_MESSAGE = "Jane Doe, 1234 Oak Ave, Austin, TX 78701, 555 123 4567"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -61,3 +75,50 @@ def db():
         # Tests only flush, never commit, so a rollback leaves the DB clean.
         session.rollback()
         session.close()
+
+
+@pytest.fixture
+def client():
+    yield TestClient(app)
+    # Routes commit, so clear the rows they created. Only route tests write
+    # chat sessions to the test database.
+    with SessionLocal() as db:
+        db.execute(text("DELETE FROM chat_sessions"))
+        db.commit()
+
+
+@pytest.fixture
+def jane_customer():
+    # Routes use their own DB session, so the customer has to be committed.
+    with SessionLocal() as db:
+        customer = Customer(**JANE)
+        db.add(customer)
+        db.commit()
+        customer_id = customer.id
+    yield customer_id
+    with SessionLocal() as db:
+        db.execute(text("DELETE FROM customers WHERE id = :id"), {"id": customer_id})
+        db.commit()
+
+
+@pytest.fixture
+def fake_model(monkeypatch):
+    """Replace both Ollama calls; `extraction` is what the model 'extracts'."""
+
+    class FakeModel:
+        extraction: dict = {}
+        replies_seen: list[dict] = []
+
+    def fake_extract(message, history=None, model="qwen3:8b"):
+        if isinstance(FakeModel.extraction, Exception):
+            raise FakeModel.extraction
+        return FakeModel.extraction
+
+    def fake_chat(message, history=None, model="qwen3:8b", extra_instructions=None):
+        FakeModel.replies_seen.append({"extra_instructions": extra_instructions})
+        return "model reply"
+
+    FakeModel.replies_seen = []
+    monkeypatch.setattr(ollama_client, "extract_identity", fake_extract)
+    monkeypatch.setattr(ollama_client, "chat", fake_chat)
+    return FakeModel

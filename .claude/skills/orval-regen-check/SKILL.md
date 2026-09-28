@@ -31,7 +31,6 @@ These do not affect the schema, so ignore them: `backend/app/services/`, `backen
 ## 4. When it is stale, say this (one short block)
 - Which backend files changed and what is out of date in the client, for example: "`POST /verify-code` and `VerifyCodeRequest` are not in `chat.ts`".
 - The command for the user to run, and its prerequisite: the backend must be running at `localhost:8000`, then `cd frontend && npm run generate-api`. Offer it as `! cd frontend && npm run generate-api` so it runs in this session on their say-so.
-- If a route was added, note that the Vite proxy forwards only `/chat` and `/health`, so the new path needs a proxy entry in the frontend Vite config. Mention it; do not change it.
 - After they regenerate, offer to check frontend usages of any renamed or removed hooks and types. Do not do it unprompted.
 
 ## 5. Project rule
