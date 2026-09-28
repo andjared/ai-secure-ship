@@ -8,9 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.llm import ollama_client
-from app.llm.system_prompt import identity_collection_prompt
+from app.llm.system_prompt import (
+    HUMAN_HANDOFF_PROMPT,
+    identity_collection_prompt,
+)
 from app.models.chat_session import ChatSession, SessionState
-from app.services import identity, verification
+from app.services import escalation, identity, verification
+from app.services.escalation import HandoffLine
 
 router = APIRouter()
 
@@ -24,12 +28,15 @@ class ChatEvent(str, enum.Enum):
     """Something the client should react to after this turn."""
 
     CODE_SENT = "code_sent"
+    ESCALATED_TO_HUMAN = "escalated_to_human"
 
 
 class ChatResponse(BaseModel):
     reply: str
     session_id: str
     event: ChatEvent | None = None
+    # The scripted human handoff, in order; only set with ESCALATED_TO_HUMAN.
+    handoff: list[HandoffLine] | None = None
 
 
 @router.post("/chat", operation_id="sendChatMessage")
@@ -54,21 +61,25 @@ def send_chat_message(
         for turn in session.transcript
     ]
 
-    def record_turn(role: str, content: str) -> None:
-        session.transcript = [
-            *session.transcript,
-            {
-                "role": role,
-                "content": content,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            },
-        ]
+    def record_turn(role: str, content: str, event: str | None = None) -> None:
+        turn = {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        if event is not None:
+            turn["event"] = event
+        session.transcript = [*session.transcript, turn]
 
     record_turn("user", request.message)
 
-    extra_instructions = None
+    instructions = []
     reply = None
-    if session.state in identity.COLLECTING_STATES:
+    handoff = None
+    if escalation.is_asking_for_human(request.message):
+        handoff = escalation.start_escalation(session)
+        reply = handoff[0].content
+    elif session.state in identity.COLLECTING_STATES:
         extracted = ollama_client.extract_identity(
             request.message, history=history
         )
@@ -78,7 +89,7 @@ def send_chat_message(
                 session.pending_identity
             )
             if missing:
-                extra_instructions = identity_collection_prompt(missing)
+                instructions.append(identity_collection_prompt(missing))
             else:
                 customer_id = identity.check_collected_identity(db, session)
                 if customer_id is not None:
@@ -92,18 +103,30 @@ def send_chat_message(
                     reply = identity.IDENTITY_NOT_VERIFIED_MESSAGE
 
     if reply is None:
+        if escalation.is_escalated(session.transcript):
+            instructions.append(HUMAN_HANDOFF_PROMPT)
         reply = ollama_client.chat(
             request.message,
             history=history,
-            extra_instructions=extra_instructions,
+            extra_instructions=" ".join(instructions) or None,
         )
-    record_turn("assistant", reply)
+
+    if handoff is not None:
+        for line in handoff:
+            record_turn(
+                line.kind.value, line.content, event=escalation.ESCALATION_EVENT
+            )
+    else:
+        record_turn("assistant", reply)
 
     db.commit()
 
-    event = (
-        ChatEvent.CODE_SENT
-        if verification.is_waiting_for_code(session.state)
-        else None
+    if handoff is not None:
+        event = ChatEvent.ESCALATED_TO_HUMAN
+    elif verification.is_waiting_for_code(session.state):
+        event = ChatEvent.CODE_SENT
+    else:
+        event = None
+    return ChatResponse(
+        reply=reply, session_id=str(session.id), event=event, handoff=handoff
     )
-    return ChatResponse(reply=reply, session_id=str(session.id), event=event)

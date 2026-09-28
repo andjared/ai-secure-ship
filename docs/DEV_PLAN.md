@@ -40,7 +40,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 - [x] Mock 6-digit code generation tied to session, with expiry and attempt limits (Epic C)
 - [x] On-demand modal triggers correctly when the conversation reaches that state (not pre-rendered on page load)
 - [x] Code verification endpoint implemented; session transitions to "Verified"
-- [ ] Human escalation theater implemented (Epic G, Section 6.2b) — "I want to talk to a human" triggers the scripted handoff sequence from both Anonymous and Verified states
+- [x] Human escalation theater implemented (Epic G, Section 6.2b) — "I want to talk to a human" triggers the scripted handoff sequence from both Anonymous and Verified states
 
 **Notes**
 - The state machine being implemented here is Section 6.2 — it's the actual contract the backend must enforce.

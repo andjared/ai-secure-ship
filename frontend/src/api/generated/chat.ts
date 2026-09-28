@@ -39,6 +39,7 @@ export type ChatEvent = typeof ChatEvent[keyof typeof ChatEvent];
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ChatEvent = {
   code_sent: 'code_sent',
+  escalated_to_human: 'escalated_to_human',
 } as const;
 
 export type ChatRequestSessionId = string | null;
@@ -50,10 +51,13 @@ export interface ChatRequest {
 
 export type ChatResponseEvent = ChatEvent | null;
 
+export type ChatResponseHandoff = HandoffLine[] | null;
+
 export interface ChatResponse {
   reply: string;
   session_id: string;
   event?: ChatResponseEvent;
+  handoff?: ChatResponseHandoff;
 }
 
 export type CodeCheckOutcome = typeof CodeCheckOutcome[keyof typeof CodeCheckOutcome];
@@ -69,6 +73,20 @@ export const CodeCheckOutcome = {
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
+
+export interface HandoffLine {
+  kind: HandoffLineKind;
+  content: string;
+}
+
+export type HandoffLineKind = typeof HandoffLineKind[keyof typeof HandoffLineKind];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandoffLineKind = {
+  assistant: 'assistant',
+  system: 'system',
+} as const;
 
 export type ValidationErrorLocItem = string | number;
 

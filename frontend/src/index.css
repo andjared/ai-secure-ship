@@ -15,6 +15,9 @@
   --bubble-assistant: #eef5ff;
   --bubble-assistant-border: #cfe2ff;
   --header-bg: #f5f1ff;
+  --header-bg-escalated: #e3f6ec;
+  --bubble-human: #ecfaf3;
+  --bubble-human-border: #bfe9d4;
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(123, 92, 255, 0.08) 0 10px 15px -3px,

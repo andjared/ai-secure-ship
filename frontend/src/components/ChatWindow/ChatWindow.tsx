@@ -1,11 +1,17 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import "./ChatWindow.css";
-import { ChatEvent, useSendChatMessage } from "../../api/generated/chat";
+import {
+  ChatEvent,
+  HandoffLineKind,
+  useSendChatMessage,
+} from "../../api/generated/chat";
 import { CodeModal } from "../CodeModal/CodeModal";
+import { useEscalationSequence } from "./useEscalationSequence";
 
 interface Message {
-  role: "user" | "assistant";
+  // "human" is the scripted human (Melany) after an escalation.
+  role: "user" | "assistant" | "human" | "system";
   content: string;
 }
 
@@ -23,6 +29,16 @@ export function ChatWindow() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const { mutate, isPending } = useSendChatMessage();
+  const escalation = useEscalationSequence((line, isFromHuman) => {
+    const role =
+      line.kind === HandoffLineKind.assistant && isFromHuman
+        ? "human"
+        : line.kind;
+    setMessages((prev) => [...prev, { role, content: line.content }]);
+  });
+  const isBusy = isPending || escalation.isPlaying;
+  // Who replies: the bot, or "Melany" once the chat has been escalated.
+  const replyRole = escalation.isEscalated ? "human" : "assistant";
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -35,11 +51,16 @@ export function ChatWindow() {
       { data: { message: text, session_id: sessionId } },
       {
         onSuccess: (response) => {
-          const { reply, session_id, event } = response.data;
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: reply },
-          ]);
+          const { reply, session_id, event, handoff } = response.data;
+          if (event === ChatEvent.escalated_to_human && handoff) {
+            // The reply is the handoff's first line, so it is not added twice.
+            escalation.start(handoff);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              { role: replyRole, content: reply },
+            ]);
+          }
           setSessionId(session_id);
           sessionStorage.setItem("chat_session_id", session_id);
           if (event === ChatEvent.code_sent) {
@@ -50,7 +71,7 @@ export function ChatWindow() {
           setMessages((prev) => [
             ...prev,
             {
-              role: "assistant",
+              role: replyRole,
               content: "Something went wrong — please try again.",
             },
           ]);
@@ -61,8 +82,12 @@ export function ChatWindow() {
   }
 
   return (
-    <div className="chat-window">
-      <div className="chat-window__header">SecureShip Support</div>
+    <div
+      className={`chat-window${escalation.isEscalated ? " chat-window--escalated" : ""}`}
+    >
+      <div className="chat-window__header">
+        SecureShip Support{escalation.isEscalated && " — Melany"}
+      </div>
       <div className="chat-window__messages">
         {messages.map((message, index) => (
           <div
@@ -74,7 +99,7 @@ export function ChatWindow() {
         ))}
         {isPending && (
           <div
-            className="chat-message chat-message--assistant chat-message--typing"
+            className={`chat-message chat-message--${replyRole} chat-message--typing`}
             role="status"
             aria-label="SecureShip assistant is typing"
           >
@@ -90,12 +115,12 @@ export function ChatWindow() {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Type a message..."
-          disabled={isPending}
+          disabled={isBusy}
         />
         <button
           className="chat-window__send"
           type="submit"
-          disabled={isPending}
+          disabled={isBusy}
         >
           Send
         </button>
@@ -107,7 +132,7 @@ export function ChatWindow() {
           onResult={(reply) => {
             setMessages((prev) => [
               ...prev,
-              { role: "assistant", content: reply },
+              { role: replyRole, content: reply },
             ]);
             setIsCodeModalOpen(false);
           }}

@@ -18,6 +18,16 @@ IDENTITY_EXTRACTION_PROMPT = (
 )
 
 
+HUMAN_HANDOFF_PROMPT = (
+    "The visitor asked for a human, so you now reply as Melany, a human "
+    "member of the same SecureShip support team. Stay in that persona and "
+    "follow exactly the same rules as before. You have no shipment "
+    "information unless the system gives it to you: never state or guess a "
+    "shipment status, tracking or delivery detail, and never say whether "
+    "any customer or shipment exists."
+)
+
+
 def identity_collection_prompt(missing_fields: list[str]) -> str:
     return (
         "The visitor is asking about a shipment, so you must first collect "
