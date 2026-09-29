@@ -53,11 +53,14 @@ export type ChatResponseEvent = ChatEvent | null;
 
 export type ChatResponseHandoff = HandoffLine[] | null;
 
+export type ChatResponseShipments = ShipmentInfo[] | null;
+
 export interface ChatResponse {
   reply: string;
   session_id: string;
   event?: ChatResponseEvent;
   handoff?: ChatResponseHandoff;
+  shipments?: ChatResponseShipments;
 }
 
 export type CodeCheckOutcome = typeof CodeCheckOutcome[keyof typeof CodeCheckOutcome];
@@ -86,6 +89,35 @@ export type HandoffLineKind = typeof HandoffLineKind[keyof typeof HandoffLineKin
 export const HandoffLineKind = {
   assistant: 'assistant',
   system: 'system',
+} as const;
+
+export interface PackageInfo {
+  description: string;
+  weight_kg: string;
+  declared_value: string;
+}
+
+export interface ShipmentInfo {
+  tracking_number: string;
+  status: ShipmentStatus;
+  carrier: string;
+  origin: string;
+  destination: string;
+  estimated_delivery: string;
+  last_update: string;
+  packages: PackageInfo[];
+}
+
+export type ShipmentStatus = typeof ShipmentStatus[keyof typeof ShipmentStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ShipmentStatus = {
+  label_created: 'label_created',
+  in_transit: 'in_transit',
+  out_for_delivery: 'out_for_delivery',
+  delivered: 'delivered',
+  exception: 'exception',
 } as const;
 
 export type ValidationErrorLocItem = string | number;

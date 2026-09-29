@@ -5,14 +5,17 @@ import {
   ChatEvent,
   HandoffLineKind,
   useSendChatMessage,
+  type ShipmentInfo,
 } from "../../api/generated/chat";
 import { CodeModal } from "../CodeModal/CodeModal";
 import { useEscalationSequence } from "./useEscalationSequence";
+import { ShipmentCard } from "../ShipmentCard/ShipmentCard";
 
 interface Message {
   // "human" is the scripted human (Melany) after an escalation.
   role: "user" | "assistant" | "human" | "system";
   content: string;
+  shipments?: ShipmentInfo[] | null;
 }
 
 export function ChatWindow() {
@@ -51,14 +54,15 @@ export function ChatWindow() {
       { data: { message: text, session_id: sessionId } },
       {
         onSuccess: (response) => {
-          const { reply, session_id, event, handoff } = response.data;
+          const { reply, session_id, event, handoff, shipments } =
+            response.data;
           if (event === ChatEvent.escalated_to_human && handoff) {
             // The reply is the handoff's first line, so it is not added twice.
             escalation.start(handoff);
           } else {
             setMessages((prev) => [
               ...prev,
-              { role: replyRole, content: reply },
+              { role: replyRole, content: reply, shipments },
             ]);
           }
           setSessionId(session_id);
@@ -95,6 +99,12 @@ export function ChatWindow() {
             className={`chat-message chat-message--${message.role}`}
           >
             {message.content}
+            {message.shipments?.map((shipment) => (
+              <ShipmentCard
+                key={shipment.tracking_number}
+                shipment={shipment}
+              />
+            ))}
           </div>
         ))}
         {isPending && (
@@ -117,11 +127,7 @@ export function ChatWindow() {
           placeholder="Type a message..."
           disabled={isBusy}
         />
-        <button
-          className="chat-window__send"
-          type="submit"
-          disabled={isBusy}
-        >
+        <button className="chat-window__send" type="submit" disabled={isBusy}>
           Send
         </button>
       </form>

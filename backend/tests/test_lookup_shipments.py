@@ -292,6 +292,28 @@ def test_verified_chat_offers_the_tool_and_records_the_call(
     assert tracking_numbers(fake_model.tool_results[0]) == [JANE_TRACKING]
     assistant_turn = load_session(session_id).transcript[-1]
     assert assistant_turn["tool_calls"] == [TOOL_NAME]
+    # The client gets the same tool result, for rendering shipment cards.
+    shipments = response.json()["shipments"]
+    assert tracking_numbers(response.json()) == [JANE_TRACKING]
+    assert shipments[0]["status"] == "in_transit"
+    assert shipments[0]["packages"] == [
+        {"description": "Books", "weight_kg": "1.50", "declared_value": "40.00"}
+    ]
+
+
+def test_verified_chat_without_a_tool_call_returns_no_shipments(
+    client, fake_model, customers
+):
+    session_id = add_session(
+        state=SessionState.VERIFIED, customer_id=customers["jane"]
+    )
+
+    response = client.post(
+        "/chat", json={"message": "thanks!", "session_id": session_id}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["shipments"] is None
 
 
 def test_anonymous_chat_is_offered_no_tools(client, fake_model, customers):
@@ -306,3 +328,4 @@ def test_anonymous_chat_is_offered_no_tools(client, fake_model, customers):
     assert VERIFIED_SHIPMENTS_PROMPT not in (seen["extra_instructions"] or "")
     # Even if the model calls the tool anyway, the backend refuses it.
     assert fake_model.tool_results == [TOOL_UNAVAILABLE_RESULT]
+    assert response.json()["shipments"] is None

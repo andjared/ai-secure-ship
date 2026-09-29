@@ -1,11 +1,12 @@
 import logging
 
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.chat_session import ChatSession, SessionState
 from app.models.package import Package
-from app.models.shipment import Shipment
+from app.models.shipment import Shipment, ShipmentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,25 @@ LOOKUP_SHIPMENTS_TOOL = {
 # The one result for every refusal (unverified session, unknown tool), so it
 # reveals nothing about why or whether any record exists.
 TOOL_UNAVAILABLE_RESULT = {"error": "Shipment information is not available."}
+
+
+# The shape of each shipment in a successful result, so /chat can hand the
+# same data to the client with a typed schema.
+class PackageInfo(BaseModel):
+    description: str
+    weight_kg: str
+    declared_value: str
+
+
+class ShipmentInfo(BaseModel):
+    tracking_number: str
+    status: ShipmentStatus
+    carrier: str
+    origin: str
+    destination: str
+    estimated_delivery: str
+    last_update: str
+    packages: list[PackageInfo]
 
 
 def is_allowed_to_look_up_shipments(session: ChatSession) -> bool:

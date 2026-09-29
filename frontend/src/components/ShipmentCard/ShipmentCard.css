@@ -1,0 +1,78 @@
+.shipment-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-h);
+  white-space: normal;
+  text-align: left;
+}
+
+.shipment-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shipment-card__tracking {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.shipment-card__status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--text-title);
+  background: var(--accent-bg);
+}
+.shipment-card__status--delivered {
+  color: #1e7a4c;
+  background: var(--bubble-human);
+}
+.shipment-card__status--exception {
+  color: #d93025;
+  background: rgba(217, 48, 37, 0.12);
+}
+
+.shipment-card__route {
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.shipment-card__details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 6px 0 0;
+  font-size: 0.9em;
+}
+.shipment-card__details dt {
+  color: var(--text);
+}
+.shipment-card__details dd {
+  margin: 0;
+}
+
+.shipment-card__packages {
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+  font-size: 0.9em;
+}
+
+.shipment-card__package {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shipment-card__package-meta {
+  color: var(--text);
+}

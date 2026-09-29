@@ -17,6 +17,7 @@ from app.models.chat_session import ChatSession, SessionState
 from app.services import escalation, identity, verification
 from app.services.escalation import HandoffLine
 from app.tools import lookup_shipments
+from app.tools.lookup_shipments import ShipmentInfo
 
 router = APIRouter()
 
@@ -39,6 +40,8 @@ class ChatResponse(BaseModel):
     event: ChatEvent | None = None
     # The scripted human handoff, in order; only set with ESCALATED_TO_HUMAN.
     handoff: list[HandoffLine] | None = None
+    # The lookup tool's result; only set when it ran successfully this turn.
+    shipments: list[ShipmentInfo] | None = None
 
 
 @router.post("/chat", operation_id="sendChatMessage")
@@ -81,10 +84,16 @@ def send_chat_message(
         session.transcript = [*session.transcript, turn]
 
     tools_called: list[str] = []
+    shown_shipments = None
 
     def run_tool(name: str, arguments: dict) -> dict:
+        nonlocal shown_shipments
         tools_called.append(name)
-        return lookup_shipments.run_tool(db, session, name, arguments)
+        result = lookup_shipments.run_tool(db, session, name, arguments)
+        # A refusal has no "shipments", so only allowed data reaches the client.
+        if "shipments" in result:
+            shown_shipments = result["shipments"]
+        return result
 
     record_turn("user", request.message)
 
@@ -151,5 +160,9 @@ def send_chat_message(
     else:
         event = None
     return ChatResponse(
-        reply=reply, session_id=str(session.id), event=event, handoff=handoff
+        reply=reply,
+        session_id=str(session.id),
+        event=event,
+        handoff=handoff,
+        shipments=shown_shipments,
     )
