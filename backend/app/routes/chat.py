@@ -10,11 +10,13 @@ from app.db.session import get_db
 from app.llm import ollama_client
 from app.llm.system_prompt import (
     HUMAN_HANDOFF_PROMPT,
+    VERIFIED_SHIPMENTS_PROMPT,
     identity_collection_prompt,
 )
 from app.models.chat_session import ChatSession, SessionState
 from app.services import escalation, identity, verification
 from app.services.escalation import HandoffLine
+from app.tools import lookup_shipments
 
 router = APIRouter()
 
@@ -61,7 +63,12 @@ def send_chat_message(
         for turn in session.transcript
     ]
 
-    def record_turn(role: str, content: str, event: str | None = None) -> None:
+    def record_turn(
+        role: str,
+        content: str,
+        event: str | None = None,
+        tool_calls: list[str] | None = None,
+    ) -> None:
         turn = {
             "role": role,
             "content": content,
@@ -69,7 +76,15 @@ def send_chat_message(
         }
         if event is not None:
             turn["event"] = event
+        if tool_calls:
+            turn["tool_calls"] = tool_calls
         session.transcript = [*session.transcript, turn]
+
+    tools_called: list[str] = []
+
+    def run_tool(name: str, arguments: dict) -> dict:
+        tools_called.append(name)
+        return lookup_shipments.run_tool(db, session, name, arguments)
 
     record_turn("user", request.message)
 
@@ -105,10 +120,18 @@ def send_chat_message(
     if reply is None:
         if escalation.is_escalated(session.transcript):
             instructions.append(HUMAN_HANDOFF_PROMPT)
+        # Unverified sessions are never even offered the tool; run_tool
+        # checks again regardless.
+        tools = None
+        if lookup_shipments.is_allowed_to_look_up_shipments(session):
+            instructions.append(VERIFIED_SHIPMENTS_PROMPT)
+            tools = [lookup_shipments.LOOKUP_SHIPMENTS_TOOL]
         reply = ollama_client.chat(
             request.message,
             history=history,
             extra_instructions=" ".join(instructions) or None,
+            tools=tools,
+            run_tool=run_tool,
         )
 
     if handoff is not None:
@@ -117,7 +140,7 @@ def send_chat_message(
                 line.kind.value, line.content, event=escalation.ESCALATION_EVENT
             )
     else:
-        record_turn("assistant", reply)
+        record_turn("assistant", reply, tool_calls=tools_called)
 
     db.commit()
 

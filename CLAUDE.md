@@ -33,12 +33,13 @@ Regenerate the frontend API client (backend must be running on :8000): `cd front
 
 ## Architecture
 
-- **Backend** (`backend/app`): FastAPI + sync SQLAlchemy 2.0 on Postgres. `routes/` holds HTTP handlers, `services/` holds the security logic (currently `identity.py`), `llm/` wraps Ollama, `models/` the ORM. There are no migrations: `Base.metadata.create_all` runs on startup, so adding a column to an existing table does nothing until that table is dropped (`docker compose down -v` or drop it in psql). The test conftest has the same limitation with the persistent test DB.
+- **Backend** (`backend/app`): FastAPI + sync SQLAlchemy 2.0 on Postgres. `routes/` holds HTTP handlers, `services/` holds the security logic (currently `identity.py`), `tools/` holds the tools the model may call, `llm/` wraps Ollama, `models/` the ORM. There are no migrations: `Base.metadata.create_all` runs on startup, so adding a column to an existing table does nothing until that table is dropped (`docker compose down -v` or drop it in psql). The test conftest has the same limitation with the persistent test DB.
 - **Chat flow**: `POST /chat` (`operation_id="sendChatMessage"`) loads or creates a `ChatSession`, appends the user turn to the JSONB `transcript`, calls Ollama over HTTP (`llm/ollama_client.py`, non-streaming), appends the reply, commits. `transcript` is reassigned to a new list on each turn so SQLAlchemy detects the change; keep doing that instead of mutating in place.
 - **Session state machine** (`models/chat_session.py`, spec in REQUIREMENTS 6.2): `anonymous → collecting_identity → code_sent → awaiting_code → verified`, plus `escalated_to_human`. `IdentityRejected` and `CodeExpired` in the diagram are not enum values.
 - **Identity collection** (`services/identity.py`, used by `/chat`): while a session is `anonymous` or `collecting_identity`, `llm/ollama_client.py` `extract_identity` makes a separate structured-output Ollama call that returns the four details plus an "asks about a shipment" flag. `collect_identity` is the only code that moves `anonymous → collecting_identity`, and it keeps a detail only if it visibly appears in the visitor's message. Details accumulate in `ChatSession.pending_identity` (JSONB, reassign a new dict on change). Once all four are present `/chat` matches them (see below) and replies with `IDENTITY_COLLECTED_MESSAGE` on a hit or `IDENTITY_NOT_VERIFIED_MESSAGE` on a miss, never a model reply.
 - **Identity matching** (`services/identity.py`): `match_customer` requires all four fields (first name, last name, address, phone) to match the same single customer after normalization, and returns a customer id or `None` with no failure reason. Callers must show `IDENTITY_NOT_VERIFIED_MESSAGE`. `/chat` runs it through `check_collected_identity` once all four details are collected: a hit moves the session to `code_sent` without setting `customer_id` and returns the matched id, which `/chat` passes to `generate_and_send_code` to hold in memory with the code; a miss clears `pending_identity` and the session stays `collecting_identity`.
 - **Code verification** (`services/verification.py`, `routes/verify.py`): codes live only in the in-memory `_codes` dict. `POST /verify-code` (`operation_id="verifyCode"`) calls `check_code`, the only place that sets `customer_id` and moves a session to `verified`. A wrong code uses an attempt (`awaiting_code`); expiry, the last failed attempt or a missing code reset the session to `collecting_identity` with the neutral `CODE_RESTART_MESSAGE`.
+- **Tool calling** (`tools/lookup_shipments.py`): only a `verified` session's `/chat` offers `LOOKUP_SHIPMENTS_TOOL` (no parameters) to the model. `ollama_client.chat` runs the tool-call loop (capped at `MAX_TOOL_ROUNDS`) and passes each call to the callable the route gives it. That callable is `lookup_shipments.run_tool`, the single enforcement point: it ignores the model's arguments, refuses anything but a `verified` session with a `customer_id`, and reads the customer only from the session. Called tool names are recorded as `tool_calls` on the assistant transcript turn.
 - **Frontend** (`frontend/src`): React 19 + Vite + React Query. The API client is Orval output in `src/api/generated/chat.ts`, generated from the backend's live OpenAPI schema (`frontend/orval.config.ts`). There is no Vite proxy: `src/main.tsx` sets `axios.defaults.baseURL` to `http://localhost:8000`, and the backend's CORS allows `http://localhost:3000`. A new backend route only needs a regeneration.
 
 ## Project rules
@@ -65,7 +66,7 @@ Regenerate the frontend API client (backend must be running on :8000): `cd front
 
 ## Project structure
 
-- Follow the existing layout (`backend/app/{routes,services,llm,models,db}`, `frontend/src/{api,components}`, `docs/`). Put new code in the folder that already fits its role.
+- Follow the existing layout (`backend/app/{routes,services,tools,llm,models,db}`, `frontend/src/{api,components}`, `docs/`). Put new code in the folder that already fits its role.
 - Don't create new folders unless nothing existing fits. Always try to reuse an existing folder first; when a new one is truly needed, say why.
 - Don't add a new file for one-off code that belongs in an existing file. Backend tests go in `backend/tests/`.
 
@@ -78,7 +79,7 @@ Regenerate the frontend API client (backend must be running on :8000): `cd front
 
 ## Architecture rules
 
-- Backend layers: `routes/` handles HTTP only (parse the request, call a service, shape the response). Security and business logic live in `services/`. `llm/` only talks to Ollama. `models/` is ORM only. Routes hold no business rules, and services never import from `routes/`.
+- Backend layers: `routes/` handles HTTP only (parse the request, call a service, shape the response). Security and business logic live in `services/`. `tools/` holds model-callable tools (definition plus execution); a tool always takes the customer from the session, never from its arguments, and never imports `routes/` or `llm/`. `llm/` only talks to Ollama and never imports `tools/`. `models/` is ORM only. Routes hold no business rules, and services never import from `routes/`.
 - Security decisions live in one auditable place in the backend; never scatter "is the session verified" checks.
 - Keep functions small and single-purpose. Pass dependencies such as the DB session in via FastAPI `Depends` instead of creating them inside functions.
 - New service or security logic gets tests in `backend/tests/`.

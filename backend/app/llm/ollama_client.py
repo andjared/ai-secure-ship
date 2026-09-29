@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from collections.abc import Callable
 
 import httpx
 
@@ -36,14 +37,21 @@ IDENTITY_EXTRACTION_SCHEMA = {
 }
 
 
-def _post_chat(payload: dict) -> str:
+# How many times one turn may go model -> tool -> model before giving up.
+MAX_TOOL_ROUNDS = 3
+TOOL_ROUNDS_EXCEEDED_MESSAGE = (
+    "Sorry, I couldn't look that up right now. Please try again."
+)
+
+
+def _post_chat(payload: dict) -> dict:
     response = httpx.post(
         f"{OLLAMA_HOST}/api/chat",
         json={"stream": False, **payload},
         timeout=60,
     )
     response.raise_for_status()
-    return response.json()["message"]["content"]
+    return response.json()["message"]
 
 
 def chat(
@@ -51,7 +59,15 @@ def chat(
     history: list[dict] | None = None,
     model: str = "qwen3:8b",
     extra_instructions: str | None = None,
+    tools: list[dict] | None = None,
+    run_tool: Callable[[str, dict], dict] | None = None,
 ) -> str:
+    """Get the model's reply, running any tool calls it makes on the way.
+
+    `tools` are offered to the model only when given, and each call is
+    handed to `run_tool` (name, arguments), which decides what the model
+    gets back. This module never runs a tool itself.
+    """
     system_prompt = SYSTEM_PROMPT
     if extra_instructions:
         system_prompt = f"{system_prompt} {extra_instructions}"
@@ -60,7 +76,35 @@ def chat(
     messages.extend(history or [])
     messages.append({"role": "user", "content": message})
 
-    return _post_chat({"model": model, "messages": messages})
+    payload = {"model": model, "messages": messages}
+    if tools:
+        payload["tools"] = tools
+
+    for _ in range(MAX_TOOL_ROUNDS + 1):
+        reply = _post_chat(payload)
+        tool_calls = reply.get("tool_calls") or []
+        if not tool_calls or run_tool is None:
+            return reply["content"]
+
+        messages.append(reply)
+        for tool_call in tool_calls:
+            function = tool_call.get("function") or {}
+            name = function.get("name") or ""
+            arguments = function.get("arguments")
+            result = run_tool(
+                name, arguments if isinstance(arguments, dict) else {}
+            )
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_name": name,
+                    # Unescaped, so the model reads "Čačak", not "Č...".
+                    "content": json.dumps(result, ensure_ascii=False),
+                }
+            )
+
+    logger.warning("tool rounds exceeded")
+    return TOOL_ROUNDS_EXCEEDED_MESSAGE
 
 
 def extract_identity(
@@ -88,7 +132,7 @@ def extract_identity(
                 "think": False,
                 "options": {"temperature": 0},
             }
-        )
+        )["content"]
         extracted = json.loads(content)
     except (httpx.HTTPError, KeyError, ValueError) as error:
         logger.warning("identity extraction failed: %s", type(error).__name__)

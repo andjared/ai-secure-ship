@@ -103,22 +103,41 @@ def jane_customer():
 
 @pytest.fixture
 def fake_model(monkeypatch):
-    """Replace both Ollama calls; `extraction` is what the model 'extracts'."""
+    """Replace both Ollama calls; `extraction` is what the model 'extracts'.
+
+    Set `tool_call` to a (name, arguments) pair to have the fake model call
+    that tool once; each result lands in `tool_results`.
+    """
 
     class FakeModel:
         extraction: dict = {}
         replies_seen: list[dict] = []
+        tool_call: tuple[str, dict] | None = None
+        tool_results: list[dict] = []
 
     def fake_extract(message, history=None, model="qwen3:8b"):
         if isinstance(FakeModel.extraction, Exception):
             raise FakeModel.extraction
         return FakeModel.extraction
 
-    def fake_chat(message, history=None, model="qwen3:8b", extra_instructions=None):
-        FakeModel.replies_seen.append({"extra_instructions": extra_instructions})
+    def fake_chat(
+        message,
+        history=None,
+        model="qwen3:8b",
+        extra_instructions=None,
+        tools=None,
+        run_tool=None,
+    ):
+        FakeModel.replies_seen.append(
+            {"extra_instructions": extra_instructions, "tools": tools}
+        )
+        if FakeModel.tool_call is not None and run_tool is not None:
+            FakeModel.tool_results.append(run_tool(*FakeModel.tool_call))
         return "model reply"
 
     FakeModel.replies_seen = []
+    FakeModel.tool_call = None
+    FakeModel.tool_results = []
     monkeypatch.setattr(ollama_client, "extract_identity", fake_extract)
     monkeypatch.setattr(ollama_client, "chat", fake_chat)
     return FakeModel
