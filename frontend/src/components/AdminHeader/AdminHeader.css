@@ -1,0 +1,32 @@
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-header__title {
+  margin-right: auto;
+  font-weight: 600;
+  color: var(--text-title);
+}
+
+.admin-header__user {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.admin-header__logout {
+  padding: 8px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-title);
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-header__logout:hover {
+  background: var(--accent-bg);
+}

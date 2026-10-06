@@ -1,0 +1,35 @@
+.admin-gate {
+  padding: 40px 24px;
+}
+
+.admin-gate__title {
+  margin: 0 0 24px;
+  font-size: 1.4rem;
+  color: var(--text-title);
+}
+
+.admin-gate__status {
+  margin: 0;
+  padding: 40px 24px;
+  color: var(--text);
+}
+
+.admin-gate__error {
+  color: #d93025;
+  font-size: 1rem;
+}
+
+.admin-gate__login {
+  padding: 14px 40px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #9b8cf0, var(--accent));
+  color: white;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.admin-gate__login:hover {
+  background: linear-gradient(90deg, #8b7aee, var(--accent-hover));
+}

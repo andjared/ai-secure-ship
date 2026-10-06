@@ -5,3 +5,7 @@ __pycache__/
 .env
 .venv/
 pgdata/
+
+/.agents/
+/.claude/skills/auth0
+/skills-lock.json

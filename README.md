@@ -75,6 +75,22 @@ Serves on http://localhost:3000, same as the Docker path.
 
 > Don't run both the Docker `backend`/`frontend` containers and the native processes at the same time — they'd conflict on ports 8000/3000.
 
+## Admin login (Auth0)
+
+The admin area lives at http://localhost:3000/admin and requires an Auth0 login. The chat at `/` does not use Auth0 at all.
+
+One-time setup in the [Auth0 Dashboard](https://manage.auth0.com):
+
+1. **Applications → Applications → Create Application**, type **Single Page Web Applications**. In its settings:
+   - Allowed Callback URLs: `http://localhost:3000/admin`
+   - Allowed Logout URLs: `http://localhost:3000/admin`
+   - Allowed Web Origins: `http://localhost:3000`
+2. **Applications → APIs → Create API**. Its identifier is the audience.
+3. **Authentication → Database → Username-Password-Authentication**: turn on **Disable Sign Ups**, so nobody can register themselves as an admin.
+4. **User Management → Users → Create User** for each admin.
+
+Then copy `frontend/.env.example` to `frontend/.env` and fill in the tenant domain, the application's client ID and the API identifier. Restart `npm run dev` afterwards; with Docker, rebuild the image instead (`docker compose up -d --build frontend`), since it copies `.env` at build time.
+
 ## Inspecting the database
 
 Postgres runs in the `postgres` container regardless of whether the backend runs in Docker or natively. Connect to it with `psql` via `docker compose exec`:
