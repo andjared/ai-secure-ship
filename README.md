@@ -85,9 +85,10 @@ One-time setup in the [Auth0 Dashboard](https://manage.auth0.com):
    - Allowed Callback URLs: `http://localhost:3000/admin`
    - Allowed Logout URLs: `http://localhost:3000/admin`
    - Allowed Web Origins: `http://localhost:3000`
-2. **Applications → APIs → Create API**. Its identifier is the audience.
+2. **Applications → APIs → Create API**. Its identifier is the audience. Then open the API's **Application Access** tab and, under **User-Delegated Access**, grant access to the application from step 1; without this, login fails with "Client is not authorized to access resource server".
 3. **Authentication → Database → Username-Password-Authentication**: turn on **Disable Sign Ups**, so nobody can register themselves as an admin.
 4. **User Management → Users → Create User** for each admin.
+5. In the application's **Connections** tab, switch off `google-oauth2`, so only the users you created can log in.
 
 Then copy `frontend/.env.example` to `frontend/.env` and fill in the tenant domain, the application's client ID and the API identifier. Restart `npm run dev` afterwards; with Docker, rebuild the image instead (`docker compose up -d --build frontend`), since it copies `.env` at build time.
 

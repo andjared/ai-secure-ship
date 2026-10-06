@@ -1,17 +1,10 @@
 import "./ShipmentCard.css";
-import type { ShipmentInfo, ShipmentStatus } from "../../api/generated/chat";
+import type { ShipmentInfo } from "../../api/generated/chat";
+import { STATUS_LABELS } from "./statusLabels";
 
 interface ShipmentCardProps {
   shipment: ShipmentInfo;
 }
-
-const STATUS_LABELS: Record<ShipmentStatus, string> = {
-  label_created: "Label created",
-  in_transit: "In transit",
-  out_for_delivery: "Out for delivery",
-  delivered: "Delivered",
-  exception: "Exception",
-};
 
 // A plain date ("2026-10-03") parses as UTC midnight, so format it in UTC
 // to avoid showing the day before in timezones behind UTC.

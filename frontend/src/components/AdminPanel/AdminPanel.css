@@ -1,0 +1,32 @@
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  text-align: left;
+  /* Fills the screen below the header (minus the card's margins), so the
+     card keeps its size and place when a filter leaves only a few rows. */
+  box-sizing: border-box;
+  min-height: calc(100vh - 160px);
+}
+
+.admin-panel__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-panel__tab {
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-panel__tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--text-title);
+}

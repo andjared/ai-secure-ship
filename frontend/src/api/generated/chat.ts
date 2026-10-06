@@ -73,6 +73,53 @@ export const CodeCheckOutcome = {
   restart: 'restart',
 } as const;
 
+export interface CustomerInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  first_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  last_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  phone_number: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  address: string;
+}
+
+export interface CustomerRecord {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  first_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  last_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  phone_number: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  address: string;
+  id: string;
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -97,6 +144,34 @@ export interface PackageInfo {
   declared_value: string;
 }
 
+export type PackageInputWeightKg = number | string;
+
+export type PackageInputDeclaredValue = number | string;
+
+export interface PackageInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  description: string;
+  weight_kg: PackageInputWeightKg;
+  declared_value: PackageInputDeclaredValue;
+}
+
+export interface PackageRecord {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  description: string;
+  /** @pattern ^(?!^[-+.]*$)[+-]?0*(?:\d{0,4}|(?=[\d.]{1,7}0*$)\d{0,4}\.\d{0,2}0*$) */
+  weight_kg: string;
+  /** @pattern ^(?!^[-+.]*$)[+-]?0*(?:\d{0,8}|(?=[\d.]{1,11}0*$)\d{0,8}\.\d{0,2}0*$) */
+  declared_value: string;
+  id: string;
+  shipment_id: string;
+}
+
 export interface ShipmentInfo {
   tracking_number: string;
   status: ShipmentStatus;
@@ -106,6 +181,59 @@ export interface ShipmentInfo {
   estimated_delivery: string;
   last_update: string;
   packages: PackageInfo[];
+}
+
+export interface ShipmentInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tracking_number: string;
+  status: ShipmentStatus;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  carrier: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  origin: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  destination: string;
+  estimated_delivery: string;
+}
+
+export interface ShipmentRecord {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tracking_number: string;
+  status: ShipmentStatus;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  carrier: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  origin: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  destination: string;
+  estimated_delivery: string;
+  id: string;
+  customer_id: string;
+  last_update: string;
 }
 
 export type ShipmentStatus = typeof ShipmentStatus[keyof typeof ShipmentStatus];
@@ -141,6 +269,10 @@ export interface VerifyCodeResponse {
   reply: string;
   attempts_remaining?: VerifyCodeResponseAttemptsRemaining;
 }
+
+export type ListShipmentsParams = {
+customer_id?: string | null;
+};
 
 export type HealthHealthGet200 = {[key: string]: string};
 
@@ -264,6 +396,841 @@ export const useVerifyCode = <TError = AxiosError<HTTPValidationError>,
       > => {
 
       const mutationOptions = getVerifyCodeMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary List Customers
+ */
+export const listCustomers = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CustomerRecord[]>> => {
+    
+    
+    return axios.default.get(
+      `/admin/customers`,options
+    );
+  }
+
+
+
+
+export const getListCustomersQueryKey = () => {
+    return [
+    `/admin/customers`
+    ] as const;
+    }
+
+    
+export const getListCustomersQueryOptions = <TData = Awaited<ReturnType<typeof listCustomers>>, TError = AxiosError<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData>>, axios?: AxiosRequestConfig}
+) => {
+
+const {query: queryOptions, axios: axiosOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCustomersQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCustomers>>> = ({ signal }) => listCustomers({ signal, ...axiosOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCustomersQueryResult = NonNullable<Awaited<ReturnType<typeof listCustomers>>>
+export type ListCustomersQueryError = AxiosError<unknown>
+
+
+export function useListCustomers<TData = Awaited<ReturnType<typeof listCustomers>>, TError = AxiosError<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCustomers>>,
+          TError,
+          Awaited<ReturnType<typeof listCustomers>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCustomers<TData = Awaited<ReturnType<typeof listCustomers>>, TError = AxiosError<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCustomers>>,
+          TError,
+          Awaited<ReturnType<typeof listCustomers>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCustomers<TData = Awaited<ReturnType<typeof listCustomers>>, TError = AxiosError<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Customers
+ */
+
+export function useListCustomers<TData = Awaited<ReturnType<typeof listCustomers>>, TError = AxiosError<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCustomersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * @summary Create Customer
+ */
+export const createCustomer = (
+    customerInput: CustomerInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CustomerRecord>> => {
+    
+    
+    return axios.default.post(
+      `/admin/customers`,
+      customerInput,options
+    );
+  }
+
+
+
+export const getCreateCustomerMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomer>>, TError,{data: CustomerInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomer>>, TError,{data: CustomerInput}, TContext> => {
+
+const mutationKey = ['createCustomer'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomer>>, {data: CustomerInput}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomer(data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomer>>>
+    export type CreateCustomerMutationBody = CustomerInput
+    export type CreateCustomerMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Create Customer
+ */
+export const useCreateCustomer = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomer>>, TError,{data: CustomerInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomer>>,
+        TError,
+        {data: CustomerInput},
+        TContext
+      > => {
+
+      const mutationOptions = getCreateCustomerMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Update Customer
+ */
+export const updateCustomer = (
+    customerId: string,
+    customerInput: CustomerInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CustomerRecord>> => {
+    
+    
+    return axios.default.put(
+      `/admin/customers/${customerId}`,
+      customerInput,options
+    );
+  }
+
+
+
+export const getUpdateCustomerMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomer>>, TError,{customerId: string;data: CustomerInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCustomer>>, TError,{customerId: string;data: CustomerInput}, TContext> => {
+
+const mutationKey = ['updateCustomer'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCustomer>>, {customerId: string;data: CustomerInput}> = (props) => {
+          const {customerId,data} = props ?? {};
+
+          return  updateCustomer(customerId,data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof updateCustomer>>>
+    export type UpdateCustomerMutationBody = CustomerInput
+    export type UpdateCustomerMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Update Customer
+ */
+export const useUpdateCustomer = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomer>>, TError,{customerId: string;data: CustomerInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCustomer>>,
+        TError,
+        {customerId: string;data: CustomerInput},
+        TContext
+      > => {
+
+      const mutationOptions = getUpdateCustomerMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Delete Customer
+ */
+export const deleteCustomer = (
+    customerId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    
+    
+    return axios.default.delete(
+      `/admin/customers/${customerId}`,options
+    );
+  }
+
+
+
+export const getDeleteCustomerMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomer>>, TError,{customerId: string}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCustomer>>, TError,{customerId: string}, TContext> => {
+
+const mutationKey = ['deleteCustomer'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCustomer>>, {customerId: string}> = (props) => {
+          const {customerId} = props ?? {};
+
+          return  deleteCustomer(customerId,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCustomer>>>
+    
+    export type DeleteCustomerMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Delete Customer
+ */
+export const useDeleteCustomer = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomer>>, TError,{customerId: string}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCustomer>>,
+        TError,
+        {customerId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteCustomerMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary List Shipments
+ */
+export const listShipments = (
+    params?: ListShipmentsParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ShipmentRecord[]>> => {
+    
+    
+    return axios.default.get(
+      `/admin/shipments`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+
+
+
+export const getListShipmentsQueryKey = (params?: ListShipmentsParams,) => {
+    return [
+    `/admin/shipments`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getListShipmentsQueryOptions = <TData = Awaited<ReturnType<typeof listShipments>>, TError = AxiosError<HTTPValidationError>>(params?: ListShipmentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData>>, axios?: AxiosRequestConfig}
+) => {
+
+const {query: queryOptions, axios: axiosOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListShipmentsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShipments>>> = ({ signal }) => listShipments(params, { signal, ...axiosOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListShipmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listShipments>>>
+export type ListShipmentsQueryError = AxiosError<HTTPValidationError>
+
+
+export function useListShipments<TData = Awaited<ReturnType<typeof listShipments>>, TError = AxiosError<HTTPValidationError>>(
+ params: undefined |  ListShipmentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listShipments>>,
+          TError,
+          Awaited<ReturnType<typeof listShipments>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListShipments<TData = Awaited<ReturnType<typeof listShipments>>, TError = AxiosError<HTTPValidationError>>(
+ params?: ListShipmentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listShipments>>,
+          TError,
+          Awaited<ReturnType<typeof listShipments>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListShipments<TData = Awaited<ReturnType<typeof listShipments>>, TError = AxiosError<HTTPValidationError>>(
+ params?: ListShipmentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Shipments
+ */
+
+export function useListShipments<TData = Awaited<ReturnType<typeof listShipments>>, TError = AxiosError<HTTPValidationError>>(
+ params?: ListShipmentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShipments>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListShipmentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * @summary Create Shipment
+ */
+export const createShipment = (
+    customerId: string,
+    shipmentInput: ShipmentInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ShipmentRecord>> => {
+    
+    
+    return axios.default.post(
+      `/admin/customers/${customerId}/shipments`,
+      shipmentInput,options
+    );
+  }
+
+
+
+export const getCreateShipmentMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShipment>>, TError,{customerId: string;data: ShipmentInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof createShipment>>, TError,{customerId: string;data: ShipmentInput}, TContext> => {
+
+const mutationKey = ['createShipment'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShipment>>, {customerId: string;data: ShipmentInput}> = (props) => {
+          const {customerId,data} = props ?? {};
+
+          return  createShipment(customerId,data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShipmentMutationResult = NonNullable<Awaited<ReturnType<typeof createShipment>>>
+    export type CreateShipmentMutationBody = ShipmentInput
+    export type CreateShipmentMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Create Shipment
+ */
+export const useCreateShipment = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShipment>>, TError,{customerId: string;data: ShipmentInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createShipment>>,
+        TError,
+        {customerId: string;data: ShipmentInput},
+        TContext
+      > => {
+
+      const mutationOptions = getCreateShipmentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Update Shipment
+ */
+export const updateShipment = (
+    shipmentId: string,
+    shipmentInput: ShipmentInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ShipmentRecord>> => {
+    
+    
+    return axios.default.put(
+      `/admin/shipments/${shipmentId}`,
+      shipmentInput,options
+    );
+  }
+
+
+
+export const getUpdateShipmentMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{shipmentId: string;data: ShipmentInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{shipmentId: string;data: ShipmentInput}, TContext> => {
+
+const mutationKey = ['updateShipment'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShipment>>, {shipmentId: string;data: ShipmentInput}> = (props) => {
+          const {shipmentId,data} = props ?? {};
+
+          return  updateShipment(shipmentId,data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShipmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateShipment>>>
+    export type UpdateShipmentMutationBody = ShipmentInput
+    export type UpdateShipmentMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Update Shipment
+ */
+export const useUpdateShipment = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{shipmentId: string;data: ShipmentInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateShipment>>,
+        TError,
+        {shipmentId: string;data: ShipmentInput},
+        TContext
+      > => {
+
+      const mutationOptions = getUpdateShipmentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Delete Shipment
+ */
+export const deleteShipment = (
+    shipmentId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    
+    
+    return axios.default.delete(
+      `/admin/shipments/${shipmentId}`,options
+    );
+  }
+
+
+
+export const getDeleteShipmentMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{shipmentId: string}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{shipmentId: string}, TContext> => {
+
+const mutationKey = ['deleteShipment'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteShipment>>, {shipmentId: string}> = (props) => {
+          const {shipmentId} = props ?? {};
+
+          return  deleteShipment(shipmentId,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteShipmentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteShipment>>>
+    
+    export type DeleteShipmentMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Delete Shipment
+ */
+export const useDeleteShipment = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{shipmentId: string}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteShipment>>,
+        TError,
+        {shipmentId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteShipmentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary List Packages
+ */
+export const listPackages = (
+    shipmentId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PackageRecord[]>> => {
+    
+    
+    return axios.default.get(
+      `/admin/shipments/${shipmentId}/packages`,options
+    );
+  }
+
+
+
+
+export const getListPackagesQueryKey = (shipmentId?: string,) => {
+    return [
+    `/admin/shipments/${shipmentId}/packages`
+    ] as const;
+    }
+
+    
+export const getListPackagesQueryOptions = <TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+) => {
+
+const {query: queryOptions, axios: axiosOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPackagesQueryKey(shipmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPackages>>> = ({ signal }) => listPackages(shipmentId, { signal, ...axiosOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(shipmentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPackagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPackages>>>
+export type ListPackagesQueryError = AxiosError<HTTPValidationError>
+
+
+export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
+ shipmentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPackages>>,
+          TError,
+          Awaited<ReturnType<typeof listPackages>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
+ shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPackages>>,
+          TError,
+          Awaited<ReturnType<typeof listPackages>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
+ shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Packages
+ */
+
+export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
+ shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPackagesQueryOptions(shipmentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * @summary Create Package
+ */
+export const createPackage = (
+    shipmentId: string,
+    packageInput: PackageInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PackageRecord>> => {
+    
+    
+    return axios.default.post(
+      `/admin/shipments/${shipmentId}/packages`,
+      packageInput,options
+    );
+  }
+
+
+
+export const getCreatePackageMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPackage>>, TError,{shipmentId: string;data: PackageInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof createPackage>>, TError,{shipmentId: string;data: PackageInput}, TContext> => {
+
+const mutationKey = ['createPackage'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPackage>>, {shipmentId: string;data: PackageInput}> = (props) => {
+          const {shipmentId,data} = props ?? {};
+
+          return  createPackage(shipmentId,data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePackageMutationResult = NonNullable<Awaited<ReturnType<typeof createPackage>>>
+    export type CreatePackageMutationBody = PackageInput
+    export type CreatePackageMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Create Package
+ */
+export const useCreatePackage = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPackage>>, TError,{shipmentId: string;data: PackageInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPackage>>,
+        TError,
+        {shipmentId: string;data: PackageInput},
+        TContext
+      > => {
+
+      const mutationOptions = getCreatePackageMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Update Package
+ */
+export const updatePackage = (
+    packageId: string,
+    packageInput: PackageInput, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PackageRecord>> => {
+    
+    
+    return axios.default.put(
+      `/admin/packages/${packageId}`,
+      packageInput,options
+    );
+  }
+
+
+
+export const getUpdatePackageMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePackage>>, TError,{packageId: string;data: PackageInput}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePackage>>, TError,{packageId: string;data: PackageInput}, TContext> => {
+
+const mutationKey = ['updatePackage'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePackage>>, {packageId: string;data: PackageInput}> = (props) => {
+          const {packageId,data} = props ?? {};
+
+          return  updatePackage(packageId,data,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePackageMutationResult = NonNullable<Awaited<ReturnType<typeof updatePackage>>>
+    export type UpdatePackageMutationBody = PackageInput
+    export type UpdatePackageMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Update Package
+ */
+export const useUpdatePackage = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePackage>>, TError,{packageId: string;data: PackageInput}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updatePackage>>,
+        TError,
+        {packageId: string;data: PackageInput},
+        TContext
+      > => {
+
+      const mutationOptions = getUpdatePackageMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * @summary Delete Package
+ */
+export const deletePackage = (
+    packageId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    
+    
+    return axios.default.delete(
+      `/admin/packages/${packageId}`,options
+    );
+  }
+
+
+
+export const getDeletePackageMutationOptions = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePackage>>, TError,{packageId: string}, TContext>, axios?: AxiosRequestConfig}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePackage>>, TError,{packageId: string}, TContext> => {
+
+const mutationKey = ['deletePackage'];
+const {mutation: mutationOptions, axios: axiosOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, axios: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePackage>>, {packageId: string}> = (props) => {
+          const {packageId} = props ?? {};
+
+          return  deletePackage(packageId,axiosOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePackageMutationResult = NonNullable<Awaited<ReturnType<typeof deletePackage>>>
+    
+    export type DeletePackageMutationError = AxiosError<HTTPValidationError>
+
+    /**
+ * @summary Delete Package
+ */
+export const useDeletePackage = <TError = AxiosError<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePackage>>, TError,{packageId: string}, TContext>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deletePackage>>,
+        TError,
+        {packageId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeletePackageMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

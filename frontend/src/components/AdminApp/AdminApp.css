@@ -1,5 +1,5 @@
 .admin-app {
-  width: min(760px, 100%);
+  width: min(1080px, 100%);
   margin: 40px auto;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -7,10 +7,4 @@
   box-shadow: var(--shadow);
   overflow: hidden;
   font-family: system-ui, sans-serif;
-}
-
-.admin-app__placeholder {
-  margin: 0;
-  padding: 40px 24px;
-  color: var(--text);
 }

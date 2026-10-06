@@ -1,6 +1,7 @@
 import { Auth0Provider } from '@auth0/auth0-react'
 import { AdminGate } from '../AdminGate/AdminGate'
 import { AdminHeader } from '../AdminHeader/AdminHeader'
+import { AdminPanel } from '../AdminPanel/AdminPanel'
 import { ADMIN_URL } from './adminUrl'
 import './AdminApp.css'
 
@@ -19,7 +20,7 @@ export function AdminApp() {
       <section className="admin-app">
         <AdminGate>
           <AdminHeader />
-          <p className="admin-app__placeholder">The admin panel is coming next.</p>
+          <AdminPanel />
         </AdminGate>
       </section>
     </Auth0Provider>

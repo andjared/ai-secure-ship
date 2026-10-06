@@ -1,0 +1,60 @@
+.record-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 16px;
+  margin: 8px 0 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--header-bg);
+}
+
+.record-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.record-form__field input,
+.record-form__field select {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font: inherit;
+  color: var(--text-h);
+}
+
+.record-form__error {
+  grid-column: 1 / -1;
+  color: #d93025;
+  font-size: 0.85rem;
+}
+
+.record-form__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+}
+
+.record-form__actions button {
+  padding: 8px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-title);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.record-form__actions .record-form__save {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+.record-form__actions .record-form__save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
