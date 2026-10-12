@@ -10,10 +10,13 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.shipment import ShipmentStatus
 from app.services import admin_records
+from app.services.admin_auth import require_admin
 
 # Every admin route hangs off this one router, so access control is attached
-# in a single place.
-router = APIRouter(prefix="/admin", tags=["admin"])
+# in a single place: no route below runs without a valid Auth0 access token.
+router = APIRouter(
+    prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)]
+)
 
 Text = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)

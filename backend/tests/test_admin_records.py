@@ -7,10 +7,14 @@ import pytest
 from sqlalchemy import text
 
 from app.db.session import SessionLocal
+from app.main import app
 from app.models.chat_session import ChatSession, SessionState
 from app.models.package import Package
+from app.models.customer import Customer
 from app.models.shipment import Shipment, ShipmentStatus
+from app.routes import admin
 from app.services import admin_records, identity
+from app.services.admin_auth import require_admin
 from app.tools import lookup_shipments
 from tests.conftest import JANE
 
@@ -50,7 +54,10 @@ def add_customer_with_shipment_and_package(db, details):
 
 @pytest.fixture
 def admin_client(client):
+    # Stands in for a signed-in admin; the plain `client` has no token.
+    app.dependency_overrides[require_admin] = lambda: {}
     yield client
+    app.dependency_overrides.pop(require_admin)
     # Admin routes commit, so clear what they wrote to the test database.
     with SessionLocal() as db:
         db.execute(text("DELETE FROM packages"))
@@ -263,3 +270,40 @@ def test_admin_routes_reject_invalid_input(admin_client, path, body):
     response = admin_client.post(path.format(id=uuid.uuid4()), json=body)
 
     assert response.status_code == 422
+
+
+# Built from the router itself, so a route added later is covered too.
+ADMIN_ROUTES = [
+    (method, route.path)
+    for route in admin.router.routes
+    for method in sorted(route.methods)
+]
+
+
+@pytest.mark.parametrize("method, path", ADMIN_ROUTES)
+def test_admin_routes_refuse_a_request_without_a_token(client, method, path):
+    url = path.format(
+        customer_id=uuid.uuid4(), shipment_id=uuid.uuid4(), package_id=uuid.uuid4()
+    )
+
+    response = client.request(method, url, json=JANE)
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"] == "invalid_request"
+    with SessionLocal() as db:
+        assert db.query(Customer).count() == 0
+
+
+def test_admin_routes_refuse_a_malformed_token(client, caplog):
+    with caplog.at_level(logging.INFO):
+        response = client.get(
+            "/admin/customers", headers={"Authorization": "Bearer not-a-real-token"}
+        )
+
+    assert response.status_code == 401
+    assert response.json()["detail"]["error"] == "invalid_token"
+    assert "not-a-real-token" not in caplog.text
+
+
+def test_health_check_needs_no_token(client):
+    assert client.get("/health").status_code == 200

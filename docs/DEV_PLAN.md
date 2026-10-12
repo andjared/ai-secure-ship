@@ -75,7 +75,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 **Tasks**
 - [x] Auth0 integrated for admin login only, built using the Auth0 Agent Skills for Claude Code, not hand-written (Section 4.5)
 - [x] Admin panel: create/edit/delete Customer, Shipment, and Package records (Epic E2)
-- [ ] Backend admin routes protected by middleware validating the IdP token — not just hidden in frontend nav (Epic E3)
+- [x] Backend admin routes protected by middleware validating the IdP token — not just hidden in frontend nav (Epic E3)
 - [ ] Confirm: no code path lets an admin "become" a verified chat session, and no code path lets a chat session reach admin routes (Epic E4)
 
 **Notes**

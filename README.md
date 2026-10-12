@@ -53,6 +53,8 @@ Set env vars (these differ from the in-container values — `host.docker.interna
 ```bash
 export DATABASE_URL=postgresql://user:pass@localhost:5432/secureship
 export OLLAMA_HOST=http://localhost:11434
+export AUTH0_DOMAIN=your-tenant.us.auth0.com      # see "Admin login (Auth0)"
+export AUTH0_AUDIENCE=https://your-api-identifier
 ```
 
 Then run with live reload:
@@ -91,6 +93,8 @@ One-time setup in the [Auth0 Dashboard](https://manage.auth0.com):
 5. In the application's **Connections** tab, switch off `google-oauth2`, so only the users you created can log in.
 
 Then copy `frontend/.env.example` to `frontend/.env` and fill in the tenant domain, the application's client ID and the API identifier. Restart `npm run dev` afterwards; with Docker, rebuild the image instead (`docker compose up -d --build frontend`), since it copies `.env` at build time.
+
+The backend validates the admin's access token on every `/admin` route, so it needs the same tenant domain and API identifier. Copy `backend/.env.example` to `backend/.env` and fill in `AUTH0_DOMAIN` (no `https://`) and `AUTH0_AUDIENCE`; Docker Compose passes that file to the backend container (`docker compose up -d backend` picks up changes). When running the backend natively, export the two values instead. The backend refuses to start without them, and a request to `/admin` without a valid token is rejected (`curl -i http://localhost:8000/admin/customers`).
 
 ## Inspecting the database
 

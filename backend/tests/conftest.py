@@ -13,6 +13,10 @@ TEST_DATABASE_URL = os.environ.get(
     "postgresql://user:pass@localhost:5432/secureship_test",
 )
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+# Placeholders, also set before any `app` import: tests never reach a real
+# Auth0 tenant.
+os.environ["AUTH0_DOMAIN"] = "test-tenant.invalid"
+os.environ["AUTH0_AUDIENCE"] = "https://secureship-test-api"
 
 
 def _ensure_test_database() -> None:
