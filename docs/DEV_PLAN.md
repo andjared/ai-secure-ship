@@ -94,7 +94,7 @@ A week-by-week task list distilled from [`REQUIREMENTS.md`](../REQUIREMENTS.md) 
 
 **Tasks**
 - [x] Section 6 diagrams regenerated against the actual implementation (AI-drafted, human-corrected)
-- [ ] Team README finalized (AI-drafted from the real code, human-corrected)
+- [x] Team README finalized (AI-drafted from the real code, human-corrected)
 - [ ] Basic edge-case pass: expired codes, malformed input, empty states, the "give up and ask about a different topic mid-verification" path
 
 **Optional stretch goals** (pick any combination — equal weight, none required):
