@@ -14,7 +14,7 @@ import { RecordSection } from '../RecordSection/RecordSection'
 import { STATUS_LABELS } from '../ShipmentCard/statusLabels'
 
 const FIELDS: RecordField<keyof ShipmentInput>[] = [
-  { name: 'tracking_number', label: 'Tracking number' },
+  { name: 'tracking_number', label: 'Tracking number', minLength: 5 },
   {
     name: 'status',
     label: 'Status',
@@ -23,9 +23,9 @@ const FIELDS: RecordField<keyof ShipmentInput>[] = [
       label,
     })),
   },
-  { name: 'carrier', label: 'Carrier' },
-  { name: 'origin', label: 'Origin' },
-  { name: 'destination', label: 'Destination' },
+  { name: 'carrier', label: 'Carrier', minLength: 2 },
+  { name: 'origin', label: 'Origin', minLength: 2 },
+  { name: 'destination', label: 'Destination', minLength: 2 },
   { name: 'estimated_delivery', label: 'Estimated delivery', type: 'date' },
 ]
 

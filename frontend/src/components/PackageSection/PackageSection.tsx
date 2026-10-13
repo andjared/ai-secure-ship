@@ -11,9 +11,15 @@ import type { RecordField } from '../RecordForm/RecordForm'
 import { RecordSection } from '../RecordSection/RecordSection'
 
 const FIELDS: RecordField<keyof PackageInput>[] = [
-  { name: 'description', label: 'Description' },
-  { name: 'weight_kg', label: 'Weight (kg)', type: 'number' },
-  { name: 'declared_value', label: 'Declared value', type: 'number' },
+  { name: 'description', label: 'Description', minLength: 2 },
+  // The maximums match the backend's Numeric(6, 2) and Numeric(10, 2) columns.
+  { name: 'weight_kg', label: 'Weight (kg)', type: 'number', max: 9999.99 },
+  {
+    name: 'declared_value',
+    label: 'Declared value',
+    type: 'number',
+    max: 99999999.99,
+  },
 ]
 
 const EMPTY_PACKAGE: Record<keyof PackageInput, string> = {

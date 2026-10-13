@@ -27,6 +27,18 @@
   color: var(--text-h);
 }
 
+.record-form__field input[aria-invalid='true'] {
+  border-color: #d93025;
+}
+.record-form__field input[aria-invalid='true']:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.2);
+}
+
+.record-form__field-error {
+  color: #d93025;
+}
+
 .record-form__error {
   grid-column: 1 / -1;
   color: #d93025;

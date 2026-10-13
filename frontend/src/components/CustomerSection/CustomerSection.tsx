@@ -12,10 +12,15 @@ import type { RecordField } from '../RecordForm/RecordForm'
 import { RecordSection } from '../RecordSection/RecordSection'
 
 const FIELDS: RecordField<keyof CustomerInput>[] = [
-  { name: 'first_name', label: 'First name' },
-  { name: 'last_name', label: 'Last name' },
-  { name: 'phone_number', label: 'Phone number' },
-  { name: 'address', label: 'Address' },
+  { name: 'first_name', label: 'First name', minLength: 2 },
+  { name: 'last_name', label: 'Last name', minLength: 2 },
+  {
+    name: 'phone_number',
+    label: 'Phone number',
+    minLength: 6,
+    countsDigitsOnly: true,
+  },
+  { name: 'address', label: 'Address', minLength: 5 },
 ]
 
 const EMPTY_CUSTOMER: CustomerInput = {
