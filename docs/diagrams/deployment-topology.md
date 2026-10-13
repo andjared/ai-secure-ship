@@ -1,60 +1,41 @@
 # Deployment / Local Dev Topology
 
-Starting reference, copied from `SecureShip-5Week-Program.md` Section 6.5. Ollama runs on the host (not in Docker) for Metal GPU acceleration — see Section 4.7.
+As implemented (`docker-compose.yml`, `frontend/Dockerfile`, `backend/Dockerfile`, `frontend/src/main.tsx`, `backend/.env.example`, `frontend/.env.example`). Ollama runs on the host, not in Docker.
 
 ```mermaid
 flowchart LR
-    subgraph DevMachine["Engineer's MacBook"]
+    subgraph DevMachine["Developer machine"]
         direction TB
 
-        subgraph Compose["docker-compose up (baseline, required)"]
+        Browser[Browser]
+
+        subgraph Compose["docker compose up"]
             direction TB
-            ReactC["frontend container<br/>:3000"]
-            PyC["backend container<br/>:8000"]
-            PgC[("postgres container<br/>:5432")]
+            ReactC["frontend container<br/>Vite dev server :3000"]
+            PyC["backend container<br/>uvicorn :8000"]
+            PgC[("postgres:16 container<br/>:5432, volume pgdata")]
         end
 
-        Browser[Browser]
-        OllamaHost["Ollama<br/>(installed on HOST, not in Docker<br/>— full Metal GPU acceleration)<br/>:11434"]
+        OllamaHost["Ollama on the HOST<br/>:11434, model qwen3:8b"]
     end
 
-    subgraph Cloud["External Services"]
-        AuthProvider["Auth0<br/>(admin auth only)"]
-        TwilioOpt["Twilio<br/>(OPTIONAL stretch goal)"]
+    subgraph Cloud["External service"]
+        AuthProvider["Auth0<br/>(admin login only)"]
     end
 
-    Browser --> ReactC
-    ReactC -->|"REST/JSON or WebSocket<br/>(Section 6.3 / 6.3b)"| PyC
-    PyC -->|"host.docker.internal:11434"| OllamaHost
-    PyC --> PgC
-    PyC -.->|"admin token validation"| AuthProvider
-    PyC -.->|"optional real SMS"| TwilioOpt
+    Browser -->|"loads the app<br/>localhost:3000"| ReactC
+    Browser -->|"REST/JSON, CORS<br/>localhost:8000"| PyC
+    PyC -->|"DATABASE_URL<br/>postgres:5432"| PgC
+    PyC -->|"OLLAMA_HOST<br/>host.docker.internal:11434"| OllamaHost
+    Browser -.->|"admin login redirect"| AuthProvider
+    PyC -.->|"token validation keys"| AuthProvider
 
     style Compose fill:#e6f2ff,stroke:#3380cc,stroke-width:2px
     style OllamaHost fill:#fff4e6,stroke:#cc8800,stroke-width:2px
 ```
 
-**Bonus tier — Ollama containerized too (optional, CPU-only inside the container):**
-
-```mermaid
-flowchart LR
-    subgraph DevMachine["Engineer's MacBook — full-Docker mode"]
-        direction TB
-        subgraph Compose["docker-compose up (everything containerized)"]
-            direction TB
-            ReactC2["frontend container"]
-            PyC2["backend container"]
-            PgC2[("postgres container")]
-            OllamaC["ollama container<br/>(ollama/ollama image,<br/>NO Metal access — CPU-only)"]
-        end
-        Browser2[Browser]
-    end
-
-    Browser2 --> ReactC2
-    ReactC2 --> PyC2
-    PyC2 -->|"ollama:11434<br/>(container-to-container)"| OllamaC
-    PyC2 --> PgC2
-
-    style Compose fill:#e6ffe6,stroke:#339933,stroke-width:2px
-    style OllamaC fill:#ffe6e6,stroke:#cc3333,stroke-width:2px
-```
+Notes:
+- There is no proxy between the frontend and the backend. The browser gets the app from `:3000` and then calls the API on `:8000` directly (`axios.defaults.baseURL`); the backend's CORS allows only `http://localhost:3000`.
+- The backend reads `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` from `backend/.env` and will not start without them. The frontend reads `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID` and `VITE_AUTH0_AUDIENCE` from `frontend/.env`.
+- Native dev runs the same three processes on the same ports with only Postgres in Docker; the backend then reaches Ollama at `localhost:11434`. Don't run both setups at once.
+- Verification codes are mock 2FA written to the backend log; no SMS provider is involved.

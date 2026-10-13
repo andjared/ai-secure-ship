@@ -1,11 +1,12 @@
 # Human Escalation Sequence (Epic G — cosmetic, scripted)
 
-Starting reference, copied from `SecureShip-5Week-Program.md` Section 6.2b. Implemented in Week 2, alongside the state machine.
-
-As implemented (`backend/app/services/escalation.py`):
+As implemented (`backend/app/services/escalation.py`, `backend/app/routes/chat.py`, `frontend/src/components/ChatWindow/useEscalationSequence.ts`):
+- The trigger is a backend keyword match on the visitor's message (`is_asking_for_human`), not a decision by the model.
 - Escalation can be requested from any 6.2 state, including mid identity collection and while a code is pending (G1 "at any point"). Collected details and any code in flight are kept.
 - It never changes the session `state` or `customer_id`: the handoff lines are recorded in the transcript tagged `event: "escalated_to_human"`, so "returning" to the gating rules is automatic. The `escalated_to_human` state value is unused.
-- The backend returns the script lines; the frontend plays them on a timer and shifts the window color.
+- The backend returns the script lines; the frontend shows the first line and shifts the window color at once, then plays the rest on a timer.
+- The greeting uses only a first name the visitor typed in this chat; it is never looked up.
+- Replies after the handoff are still model replies, with an extra prompt to speak as Melany, under the same gating rules.
 - Asking again after escalating gets one line ("You're already chatting with Melany") instead of the full sequence.
 
 ```mermaid
@@ -21,9 +22,8 @@ stateDiagram-v2
     EscalationRequested --> ScriptedHandoff: Trigger scripted sequence
 
     state ScriptedHandoff {
-        [*] --> Acknowledging: "Thank you for your patience,\nswitching you to a human"
-        Acknowledging --> ColorShift: Chat window changes color
-        ColorShift --> HumanJoined: "Melany has entered the chat"
+        [*] --> Acknowledging: "Thank you for your patience,\nswitching you to a human"\n(chat window changes color)
+        Acknowledging --> HumanJoined: "Melany has entered the chat"
         HumanJoined --> ReadingUp: "Hello, my name is Melany,\nlet me just read through the chat..."
         ReadingUp --> Greeting: "Hey [first_name if known],\nI'm up to speed, how can I help?"
         Greeting --> [*]

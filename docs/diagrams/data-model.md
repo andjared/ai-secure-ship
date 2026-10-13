@@ -1,12 +1,12 @@
 # Data Model (ERD)
 
-Starting reference, copied from `SecureShip-5Week-Program.md` Section 6.4. See Section 4.4 for the mock data schema and Section 4.6 for the `CHAT_SESSION.transcript` JSONB column.
+As implemented (`backend/app/models/`). Tables are created by `Base.metadata.create_all` on startup; there are no migrations.
 
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ SHIPMENT : has
     SHIPMENT ||--o{ PACKAGE : contains
-    CUSTOMER ||--o{ CHAT_SESSION : "may be linked to (post-verification)"
+    CUSTOMER |o..o{ CHAT_SESSION : "linked after verification (no FK constraint)"
     CUSTOMER {
         uuid id PK
         string first_name
@@ -18,33 +18,37 @@ erDiagram
         uuid id PK
         uuid customer_id FK
         string tracking_number
-        string status
+        enum status
         string carrier
         string origin
         string destination
         date estimated_delivery
-        datetime last_update
+        timestamptz last_update "always set by the server"
     }
     PACKAGE {
         uuid id PK
         uuid shipment_id FK
         string description
-        decimal weight_kg
-        decimal declared_value
+        numeric weight_kg "6,2"
+        numeric declared_value "10,2"
     }
     CHAT_SESSION {
         uuid id PK
-        uuid customer_id FK "nullable until Verified"
-        string state
-        datetime started_at
-        datetime ended_at
+        uuid customer_id "nullable, set only by check_code"
+        enum state
+        timestamptz started_at
+        timestamptz ended_at "nullable, never written"
         jsonb transcript
-    }
-    ADMIN_USER {
-        string id PK
-        string email
-        string idp_subject
+        jsonb pending_identity
     }
 ```
 
-> `ADMIN_USER` identity actually lives in Auth0; this row in the local DB (if mirrored) is a reference/audit record only, not the source of truth for credentials.
+Table names are `customers`, `shipments`, `packages` and `chat_sessions`.
+
+- **`shipments.status`**: `label_created`, `in_transit`, `out_for_delivery`, `delivered`, `exception`.
+- **`chat_sessions.state`**: `anonymous`, `collecting_identity`, `code_sent`, `awaiting_code`, `verified`, `escalated_to_human` (the last one is never used; see `identity-gating-state-machine.md`).
+- **`chat_sessions.customer_id`** is a plain nullable UUID column, not a database foreign key, which is why the link above is dashed. It stays empty until the code is verified.
+- **`chat_sessions.transcript`** is a list of turns: `role` (`user`, `assistant` or `system`), `content`, `timestamp`, plus an optional `event` (`escalated_to_human` on the scripted handoff lines) and optional `tool_calls` (names of tools the model called on that turn).
+- **`chat_sessions.pending_identity`** holds the unverified details the visitor typed (`first_name`, `last_name`, `address`, `phone_number`) while they are being collected.
+- **Deletes** have no database cascade; the admin service removes packages, then shipments, then the customer.
+- **Not in the database:** verification codes (in backend memory only) and admin users (they exist only in Auth0).
