@@ -1,5 +1,6 @@
 .admin-gate {
   padding: 40px 24px;
+  text-align: center;
 }
 
 .admin-gate__title {
@@ -12,6 +13,7 @@
   margin: 0;
   padding: 40px 24px;
   color: var(--text);
+  text-align: center;
 }
 
 .admin-gate__error {

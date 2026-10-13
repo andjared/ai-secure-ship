@@ -1,9 +1,9 @@
 .shipment-card {
-  margin-top: 8px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
   color: var(--text-h);
   white-space: normal;
   text-align: left;
@@ -23,9 +23,9 @@
 }
 
 .shipment-card__status {
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.8em;
+  font-size: 0.85em;
   font-weight: 600;
   color: var(--text-title);
   background: var(--accent-bg);

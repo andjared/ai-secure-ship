@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import "./ChatWindow.css";
 import {
@@ -16,6 +16,12 @@ interface Message {
   role: "user" | "assistant" | "human" | "system";
   content: string;
   shipments?: ShipmentInfo[] | null;
+}
+
+// The model is told to reply in plain text but sometimes still wraps words in
+// asterisks; drop the markers so they are never shown.
+function removeEmphasisMarkers(text: string) {
+  return text.replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1");
 }
 
 export function ChatWindow() {
@@ -42,6 +48,20 @@ export function ChatWindow() {
   const isBusy = isPending || escalation.isPlaying;
   // Who replies: the bot, or "Melany" once the chat has been escalated.
   const replyRole = escalation.isEscalated ? "human" : "assistant";
+
+  const messageList = useRef<HTMLDivElement>(null);
+  const messageInput = useRef<HTMLInputElement>(null);
+
+  // Keep the newest message (or the typing dots) in view.
+  useEffect(() => {
+    const list = messageList.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [messages.length, isPending]);
+
+  // The input is disabled while a reply is on its way, which drops focus.
+  useEffect(() => {
+    if (!isBusy && !isCodeModalOpen) messageInput.current?.focus();
+  }, [isBusy, isCodeModalOpen]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -89,23 +109,31 @@ export function ChatWindow() {
     <div
       className={`chat-window${escalation.isEscalated ? " chat-window--escalated" : ""}`}
     >
-      <div className="chat-window__header">
-        SecureShip Support{escalation.isEscalated && " — Melany"}
-      </div>
-      <div className="chat-window__messages">
+      <header className="chat-window__header">
+        <span className="chat-window__title">SecureShip Support</span>
+        <span className="chat-window__status">
+          {escalation.isEscalated ? "Melany · support agent" : "AI assistant"}
+        </span>
+      </header>
+      <div className="chat-window__messages" ref={messageList}>
         {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`chat-message chat-message--${message.role}`}
-          >
-            {message.content}
-            {message.shipments?.map((shipment) => (
-              <ShipmentCard
-                key={shipment.tracking_number}
-                shipment={shipment}
-              />
-            ))}
-          </div>
+          <Fragment key={index}>
+            <div className={`chat-message chat-message--${message.role}`}>
+              {message.role === "user"
+                ? message.content
+                : removeEmphasisMarkers(message.content)}
+            </div>
+            {message.shipments && message.shipments.length > 0 && (
+              <div className="chat-window__shipments">
+                {message.shipments.map((shipment) => (
+                  <ShipmentCard
+                    key={shipment.tracking_number}
+                    shipment={shipment}
+                  />
+                ))}
+              </div>
+            )}
+          </Fragment>
         ))}
         {isPending && (
           <div
@@ -122,6 +150,7 @@ export function ChatWindow() {
       <form className="chat-window__form" onSubmit={handleSubmit}>
         <input
           className="chat-window__input"
+          ref={messageInput}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Type a message..."
