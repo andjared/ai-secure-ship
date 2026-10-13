@@ -1,9 +1,13 @@
+import ast
 import logging
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 
+import app as app_package
 import pytest
+from fastapi.routing import APIRoute
 from sqlalchemy import text
 
 from app.db.session import SessionLocal
@@ -307,3 +311,173 @@ def test_admin_routes_refuse_a_malformed_token(client, caplog):
 
 def test_health_check_needs_no_token(client):
     assert client.get("/health").status_code == 200
+
+
+# --- separation from chat (Epic E4) -----------------------------------------
+# Admin login (Auth0) and the chat's identity gate are two separate systems:
+# an admin can never become a verified chat session, and a chat session can
+# never reach the admin API.
+
+ADMIN_AUTHORIZATION = {"Authorization": "Bearer an-admin-access-token"}
+
+ADMIN_MODULES = [
+    "routes/admin.py",
+    "services/admin_auth.py",
+    "services/admin_records.py",
+]
+CHAT_MODULES = [
+    "routes/chat.py",
+    "routes/verify.py",
+    "services/identity.py",
+    "services/verification.py",
+    "services/escalation.py",
+    "tools/lookup_shipments.py",
+    "llm/ollama_client.py",
+    "llm/system_prompt.py",
+]
+# What the admin side must never import, and what the chat side must never.
+CHAT_ONLY_IMPORTS = [
+    "app.models.chat_session",
+    "app.services.identity",
+    "app.services.verification",
+    "app.services.escalation",
+    "app.tools",
+    "app.llm",
+]
+ADMIN_ONLY_IMPORTS = [
+    "app.routes.admin",
+    "app.services.admin_auth",
+    "app.services.admin_records",
+    "fastapi_plugin",
+]
+
+
+def list_imported_names(module_path: str) -> set[str]:
+    """Every dotted name a module imports, e.g. "app.services.identity"."""
+    source = (Path(app_package.__file__).parent / module_path).read_text()
+    imported = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.update(f"{node.module}.{alias.name}" for alias in node.names)
+    return imported
+
+
+def find_forbidden_imports(module_path: str, forbidden: list[str]) -> list[str]:
+    return [
+        name
+        for name in list_imported_names(module_path)
+        if any(name == root or name.startswith(root + ".") for root in forbidden)
+    ]
+
+
+@pytest.mark.parametrize("module_path", ADMIN_MODULES)
+def test_admin_code_imports_nothing_from_the_chat(module_path):
+    assert find_forbidden_imports(module_path, CHAT_ONLY_IMPORTS) == []
+
+
+@pytest.mark.parametrize("module_path", CHAT_MODULES)
+def test_chat_code_imports_nothing_from_the_admin(module_path):
+    assert find_forbidden_imports(module_path, ADMIN_ONLY_IMPORTS) == []
+
+
+def test_only_admin_routes_carry_the_admin_check():
+    api_routes = [route for route in app.routes if isinstance(route, APIRoute)]
+    checked_paths = {
+        route.path
+        for route in api_routes
+        if require_admin in [d.call for d in route.dependant.dependencies]
+    }
+
+    assert checked_paths
+    # Built from the whole app, so an admin route mounted on another router
+    # cannot skip the check and a chat route cannot pick it up.
+    assert checked_paths == {
+        route.path for route in api_routes if route.path.startswith("/admin")
+    }
+
+
+def test_signed_in_admin_cannot_verify_a_chat_session(admin_client, fake_model):
+    fake_model.extraction = {"asks_about_shipment": False}
+    session_id = admin_client.post("/chat", json={"message": "hello"}).json()[
+        "session_id"
+    ]
+
+    customer_id = admin_client.post("/admin/customers", json=JANE).json()["id"]
+    shipment_id = admin_client.post(
+        f"/admin/customers/{customer_id}/shipments", json=SHIPMENT_JSON
+    ).json()["id"]
+    admin_client.post(f"/admin/shipments/{shipment_id}/packages", json=PACKAGE_JSON)
+    admin_client.put(f"/admin/customers/{customer_id}", json=JOHN)
+    admin_client.put(
+        f"/admin/shipments/{shipment_id}",
+        json={**SHIPMENT_JSON, "status": "delivered"},
+    )
+    admin_client.delete(f"/admin/customers/{customer_id}")
+
+    with SessionLocal() as db:
+        sessions = db.query(ChatSession).all()
+    assert [str(session.id) for session in sessions] == [session_id]
+    assert sessions[0].state == SessionState.ANONYMOUS
+    assert sessions[0].customer_id is None
+
+
+def test_admin_token_gives_the_chat_no_access(admin_client, fake_model):
+    # The admin created this customer, so they know every detail of it.
+    customer_id = admin_client.post("/admin/customers", json=JANE).json()["id"]
+    admin_client.post(f"/admin/customers/{customer_id}/shipments", json=SHIPMENT_JSON)
+    fake_model.extraction = {"asks_about_shipment": False}
+    fake_model.tool_call = (lookup_shipments.TOOL_NAME, {"customer_id": customer_id})
+
+    chat = admin_client.post(
+        "/chat", json={"message": "show my shipments"}, headers=ADMIN_AUTHORIZATION
+    )
+
+    assert chat.status_code == 200
+    assert fake_model.replies_seen[-1]["tools"] is None
+    assert fake_model.tool_results == [lookup_shipments.TOOL_UNAVAILABLE_RESULT]
+    assert chat.json()["shipments"] is None
+
+    session_id = chat.json()["session_id"]
+    admin_client.post(
+        "/verify-code",
+        json={"session_id": session_id, "code": "000000"},
+        headers=ADMIN_AUTHORIZATION,
+    )
+
+    with SessionLocal() as db:
+        session = db.get(ChatSession, uuid.UUID(session_id))
+    assert session.state != SessionState.VERIFIED
+    assert session.customer_id is None
+
+
+def test_verified_chat_session_cannot_reach_admin_routes(client, jane_customer):
+    with SessionLocal() as db:
+        session = ChatSession(
+            transcript=[],
+            pending_identity={},
+            state=SessionState.VERIFIED,
+            customer_id=jane_customer,
+        )
+        db.add(session)
+        db.commit()
+        session_id = str(session.id)
+
+    as_token = client.get(
+        "/admin/customers", headers={"Authorization": f"Bearer {session_id}"}
+    )
+    as_parameter = client.post(
+        "/admin/customers",
+        params={"session_id": session_id},
+        json={**JOHN, "session_id": session_id},
+    )
+
+    assert as_token.status_code == 401
+    assert as_token.json()["detail"]["error"] == "invalid_token"
+    assert as_parameter.status_code == 400
+    assert as_parameter.json()["detail"]["error"] == "invalid_request"
+    # Jane is still the only customer: nothing was listed or written.
+    assert JANE["first_name"] not in as_token.text
+    with SessionLocal() as db:
+        assert db.query(Customer).count() == 1

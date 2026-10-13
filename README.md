@@ -96,6 +96,8 @@ Then copy `frontend/.env.example` to `frontend/.env` and fill in the tenant doma
 
 The backend validates the admin's access token on every `/admin` route, so it needs the same tenant domain and API identifier. Copy `backend/.env.example` to `backend/.env` and fill in `AUTH0_DOMAIN` (no `https://`) and `AUTH0_AUDIENCE`; Docker Compose passes that file to the backend container (`docker compose up -d backend` picks up changes). When running the backend natively, export the two values instead. The backend refuses to start without them, and a request to `/admin` without a valid token is rejected (`curl -i http://localhost:8000/admin/customers`).
 
+Admin login and the chat's identity check are separate systems: an admin cannot become a verified chat session and a chat session cannot reach `/admin`. The checks are recorded in [docs/admin-chat-separation.md](docs/admin-chat-separation.md).
+
 ## Inspecting the database
 
 Postgres runs in the `postgres` container regardless of whether the backend runs in Docker or natively. Connect to it with `psql` via `docker compose exec`:
