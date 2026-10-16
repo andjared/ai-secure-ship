@@ -33,6 +33,27 @@
   gap: 2px;
 }
 
+.chat-window__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-window__badge {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+.chat-window__badge--verified {
+  border-color: var(--bubble-human-border);
+  background: var(--bubble-human);
+  color: #1e7a4c;
+}
+
 .chat-window__code-button {
   padding: 6px 14px;
   border: none;

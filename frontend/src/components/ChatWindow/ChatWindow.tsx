@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import "./ChatWindow.css";
 import {
   ChatEvent,
+  CodeCheckOutcome,
   HandoffLineKind,
   useSendChatMessage,
   type ShipmentInfo,
@@ -40,6 +41,8 @@ export function ChatWindow() {
   // the modal opens on its own only the first time; after that the header
   // button reopens it.
   const [isWaitingForCode, setIsWaitingForCode] = useState(false);
+  // Display only; the backend enforces verification on every request.
+  const [isVerified, setIsVerified] = useState(false);
 
   const { mutate, isPending } = useSendChatMessage();
   const escalation = useEscalationSequence((line, isFromHuman) => {
@@ -122,15 +125,22 @@ export function ChatWindow() {
             {escalation.isEscalated ? "Melany · support agent" : "AI assistant"}
           </span>
         </div>
-        {isWaitingForCode && !isCodeModalOpen && (
-          <button
-            className="chat-window__code-button"
-            type="button"
-            onClick={() => setIsCodeModalOpen(true)}
+        <div className="chat-window__header-actions">
+          {isWaitingForCode && !isCodeModalOpen && (
+            <button
+              className="chat-window__code-button"
+              type="button"
+              onClick={() => setIsCodeModalOpen(true)}
+            >
+              Enter code
+            </button>
+          )}
+          <span
+            className={`chat-window__badge${isVerified ? " chat-window__badge--verified" : ""}`}
           >
-            Enter code
-          </button>
-        )}
+            {isVerified ? "Verified" : "Anonymous"}
+          </span>
+        </div>
       </header>
       <div className="chat-window__messages" ref={messageList}>
         {messages.map((message, index) => (
@@ -181,13 +191,14 @@ export function ChatWindow() {
         <CodeModal
           sessionId={sessionId}
           onClose={() => setIsCodeModalOpen(false)}
-          onResult={(reply) => {
+          onResult={(result) => {
             setMessages((prev) => [
               ...prev,
-              { role: replyRole, content: reply },
+              { role: replyRole, content: result.reply },
             ]);
             setIsCodeModalOpen(false);
             setIsWaitingForCode(false);
+            setIsVerified(result.outcome === CodeCheckOutcome.verified);
           }}
         />
       )}

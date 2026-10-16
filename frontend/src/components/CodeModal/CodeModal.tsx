@@ -1,10 +1,14 @@
 import { useState } from "react";
 import "./CodeModal.css";
-import { CodeCheckOutcome, useVerifyCode } from "../../api/generated/chat";
+import {
+  CodeCheckOutcome,
+  useVerifyCode,
+  type VerifyCodeResponse,
+} from "../../api/generated/chat";
 
 interface CodeModalProps {
   onClose: () => void;
-  onResult: (reply: string) => void;
+  onResult: (result: VerifyCodeResponse) => void;
   sessionId: string;
 }
 
@@ -26,7 +30,7 @@ export function CodeModal({ onClose, onResult, sessionId }: CodeModalProps) {
             setCode("");
             setError(reply);
           } else {
-            onResult(reply);
+            onResult(response.data);
           }
         },
         onError: () => setError("Something went wrong — please try again."),
