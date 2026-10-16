@@ -30,6 +30,17 @@ HUMAN_HANDOFF_PROMPT = (
 )
 
 
+CODE_PENDING_PROMPT = (
+    "A verification code has been sent to the phone number on the "
+    "visitor's account. Before you can help with a shipment they must enter "
+    "it: briefly tell them to use the Enter code button at the top of the "
+    "chat. Never ask for their name, address or phone number again. You "
+    "have no shipment information yet: never state or guess a shipment "
+    "status, tracking or delivery detail, and never say whether any "
+    "customer or shipment exists."
+)
+
+
 VERIFIED_SHIPMENTS_PROMPT = (
     "The visitor's identity has been verified. For any question about their "
     "shipments, packages, tracking or deliveries, call the lookup_shipments "

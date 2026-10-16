@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.llm import ollama_client
 from app.llm.system_prompt import (
+    CODE_PENDING_PROMPT,
     HUMAN_HANDOFF_PROMPT,
     VERIFIED_SHIPMENTS_PROMPT,
     identity_collection_prompt,
@@ -129,6 +130,8 @@ def send_chat_message(
     if reply is None:
         if escalation.is_escalated(session.transcript):
             instructions.append(HUMAN_HANDOFF_PROMPT)
+        if verification.is_waiting_for_code(session.state):
+            instructions.append(CODE_PENDING_PROMPT)
         # Unverified sessions are never even offered the tool; run_tool
         # checks again regardless.
         tools = None

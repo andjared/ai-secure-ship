@@ -36,6 +36,10 @@ export function ChatWindow() {
   );
   const [draft, setDraft] = useState("");
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  // The backend sends code_sent on every turn while a code is pending, so
+  // the modal opens on its own only the first time; after that the header
+  // button reopens it.
+  const [isWaitingForCode, setIsWaitingForCode] = useState(false);
 
   const { mutate, isPending } = useSendChatMessage();
   const escalation = useEscalationSequence((line, isFromHuman) => {
@@ -87,9 +91,11 @@ export function ChatWindow() {
           }
           setSessionId(session_id);
           sessionStorage.setItem("chat_session_id", session_id);
-          if (event === ChatEvent.code_sent) {
+          const isCodeSent = event === ChatEvent.code_sent;
+          if (isCodeSent && !isWaitingForCode) {
             setIsCodeModalOpen(true);
           }
+          setIsWaitingForCode(isCodeSent);
         },
         onError: () => {
           setMessages((prev) => [
@@ -110,10 +116,21 @@ export function ChatWindow() {
       className={`chat-window${escalation.isEscalated ? " chat-window--escalated" : ""}`}
     >
       <header className="chat-window__header">
-        <span className="chat-window__title">SecureShip Support</span>
-        <span className="chat-window__status">
-          {escalation.isEscalated ? "Melany · support agent" : "AI assistant"}
-        </span>
+        <div className="chat-window__heading">
+          <span className="chat-window__title">SecureShip Support</span>
+          <span className="chat-window__status">
+            {escalation.isEscalated ? "Melany · support agent" : "AI assistant"}
+          </span>
+        </div>
+        {isWaitingForCode && !isCodeModalOpen && (
+          <button
+            className="chat-window__code-button"
+            type="button"
+            onClick={() => setIsCodeModalOpen(true)}
+          >
+            Enter code
+          </button>
+        )}
       </header>
       <div className="chat-window__messages" ref={messageList}>
         {messages.map((message, index) => (
@@ -170,6 +187,7 @@ export function ChatWindow() {
               { role: replyRole, content: reply },
             ]);
             setIsCodeModalOpen(false);
+            setIsWaitingForCode(false);
           }}
         />
       )}

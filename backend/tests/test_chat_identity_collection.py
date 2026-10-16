@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.db.session import SessionLocal
+from app.llm.system_prompt import CODE_PENDING_PROMPT
 from app.models.chat_session import ChatSession, SessionState
 from app.services import verification
 from app.services.identity import (
@@ -253,6 +254,19 @@ def test_code_sent_event_repeats_while_waiting_for_the_code(
     body = send(client, "I closed the popup, what now?", session_id)
 
     assert body["event"] == "code_sent"
+
+
+def test_turn_while_waiting_for_code_tells_the_model_the_code_is_pending(
+    client, fake_model, jane_customer
+):
+    fake_model.extraction = {"asks_about_shipment": True, **JANE}
+    session_id = send(client, JANE_MESSAGE)["session_id"]
+
+    send(client, "Where is my package?", session_id)
+
+    last_call = fake_model.replies_seen[-1]
+    assert CODE_PENDING_PROMPT in last_call["extra_instructions"]
+    assert last_call["tools"] is None
 
 
 def test_wrong_details_send_no_event(client, fake_model, jane_customer):
