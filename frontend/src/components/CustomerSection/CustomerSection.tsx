@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   getListCustomersQueryKey,
@@ -30,18 +29,7 @@ const EMPTY_CUSTOMER: CustomerInput = {
   address: '',
 }
 
-interface CustomerSectionProps {
-  selectedId: string | null
-  onSelect: (id: string | null) => void
-  // Shown under the selected customer's row.
-  children: ReactNode
-}
-
-export function CustomerSection({
-  selectedId,
-  onSelect,
-  children,
-}: CustomerSectionProps) {
+export function CustomerSection() {
   const queryClient = useQueryClient()
   const customers = useListCustomers()
   const mutation = {
@@ -71,11 +59,6 @@ export function CustomerSection({
           : createCustomer.mutateAsync({ data })
       }
       onDelete={(customerId) => deleteCustomer.mutate({ customerId })}
-      selectLabel="Shipments"
-      selectedId={selectedId}
-      onSelect={onSelect}
-    >
-      {children}
-    </RecordSection>
+    />
   )
 }

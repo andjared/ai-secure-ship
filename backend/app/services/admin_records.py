@@ -126,14 +126,14 @@ def delete_shipment(db: Session, shipment_id: uuid.UUID) -> bool:
     return True
 
 
-def list_packages(db: Session, shipment_id: uuid.UUID) -> list[Package]:
-    return list(
-        db.scalars(
-            select(Package)
-            .where(Package.shipment_id == shipment_id)
-            .order_by(Package.description)
-        )
-    )
+def list_packages(
+    db: Session, shipment_id: uuid.UUID | None = None
+) -> list[Package]:
+    """One shipment's packages, or every package when no shipment is given."""
+    query = select(Package).order_by(Package.description)
+    if shipment_id is not None:
+        query = query.where(Package.shipment_id == shipment_id)
+    return list(db.scalars(query))
 
 
 def create_package(

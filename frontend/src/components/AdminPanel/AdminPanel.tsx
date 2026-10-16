@@ -8,32 +8,15 @@ import './AdminPanel.css'
 const TABS = [
   { id: 'customers', label: 'Customers' },
   { id: 'shipments', label: 'Shipments' },
+  { id: 'packages', label: 'Packages' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
-// Two views of the same records. Customers is a drill-down: open a customer
-// to see their shipments under that row, then a shipment to see its packages.
-// Shipments lists every customer's shipments.
+// One tab per kind of record, each listing every record of that kind.
 export function AdminPanel() {
   useAdminAccessToken()
   const [tab, setTab] = useState<TabId>('customers')
-  const [customerId, setCustomerId] = useState<string | null>(null)
-  const [shipmentId, setShipmentId] = useState<string | null>(null)
-
-  function selectCustomer(id: string | null) {
-    setCustomerId(id)
-    setShipmentId(null)
-  }
-
-  function selectTab(id: TabId) {
-    setTab(id)
-    selectCustomer(null)
-  }
-
-  const packages = shipmentId && (
-    <PackageSection key={shipmentId} shipmentId={shipmentId} />
-  )
 
   return (
     <div className="admin-panel">
@@ -45,30 +28,15 @@ export function AdminPanel() {
             type="button"
             role="tab"
             aria-selected={tab === id}
-            onClick={() => selectTab(id)}
+            onClick={() => setTab(id)}
           >
             {label}
           </button>
         ))}
       </div>
-      {tab === 'customers' ? (
-        <CustomerSection selectedId={customerId} onSelect={selectCustomer}>
-          {customerId && (
-            <ShipmentSection
-              key={customerId}
-              customerId={customerId}
-              selectedId={shipmentId}
-              onSelect={setShipmentId}
-            >
-              {packages}
-            </ShipmentSection>
-          )}
-        </CustomerSection>
-      ) : (
-        <ShipmentSection selectedId={shipmentId} onSelect={setShipmentId}>
-          {packages}
-        </ShipmentSection>
-      )}
+      {tab === 'customers' && <CustomerSection />}
+      {tab === 'shipments' && <ShipmentSection />}
+      {tab === 'packages' && <PackageSection />}
     </div>
   )
 }

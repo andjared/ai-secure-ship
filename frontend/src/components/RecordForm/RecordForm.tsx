@@ -23,7 +23,7 @@ function getFieldError<Name extends string>(
   rawValue: string,
 ) {
   if (field.options) {
-    return null
+    return rawValue ? null : `${field.label} is required.`
   }
   const value = rawValue.trim()
   if (!value) {
@@ -123,6 +123,11 @@ export function RecordForm<Name extends string>({
                 value={values[field.name]}
                 onChange={(event) => setValue(field.name, event.target.value)}
               >
+                {!values[field.name] && (
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                )}
                 {field.options.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}

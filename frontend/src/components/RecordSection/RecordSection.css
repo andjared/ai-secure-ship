@@ -70,16 +70,6 @@
   font-weight: 600;
 }
 
-.record-section__row--selected {
-  background: var(--accent-bg);
-}
-
-/* The selected record's child records, nested under its row. */
-.record-section__table .record-section__children {
-  padding: 16px 8px 16px 32px;
-  background: var(--header-bg);
-}
-
 .record-section__actions {
   display: flex;
   justify-content: flex-end;

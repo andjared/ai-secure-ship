@@ -151,9 +151,9 @@ def delete_shipment(shipment_id: uuid.UUID, db: Session = Depends(get_db)) -> No
     db.commit()
 
 
-@router.get("/shipments/{shipment_id}/packages", operation_id="listPackages")
+@router.get("/packages", operation_id="listPackages")
 def list_packages(
-    shipment_id: uuid.UUID, db: Session = Depends(get_db)
+    shipment_id: uuid.UUID | None = None, db: Session = Depends(get_db)
 ) -> list[PackageRecord]:
     return admin_records.list_packages(db, shipment_id)
 

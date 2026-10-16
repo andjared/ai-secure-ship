@@ -164,9 +164,7 @@ export interface PackageRecord {
    * @maxLength 200
    */
   description: string;
-  /** @pattern ^(?!^[-+.]*$)[+-]?0*(?:\d{0,4}|(?=[\d.]{1,7}0*$)\d{0,4}\.\d{0,2}0*$) */
   weight_kg: string;
-  /** @pattern ^(?!^[-+.]*$)[+-]?0*(?:\d{0,8}|(?=[\d.]{1,11}0*$)\d{0,8}\.\d{0,2}0*$) */
   declared_value: string;
   id: string;
   shipment_id: string;
@@ -272,6 +270,10 @@ export interface VerifyCodeResponse {
 
 export type ListShipmentsParams = {
 customer_id?: string | null;
+};
+
+export type ListPackagesParams = {
+shipment_id?: string | null;
 };
 
 export type HealthHealthGet200 = {[key: string]: string};
@@ -961,41 +963,43 @@ export const useDeleteShipment = <TError = AxiosError<HTTPValidationError>,
  * @summary List Packages
  */
 export const listPackages = (
-    shipmentId: string, options?: AxiosRequestConfig
+    params?: ListPackagesParams, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<PackageRecord[]>> => {
     
     
     return axios.default.get(
-      `/admin/shipments/${shipmentId}/packages`,options
+      `/admin/packages`,{
+    ...options,
+        params: {...params, ...options?.params},}
     );
   }
 
 
 
 
-export const getListPackagesQueryKey = (shipmentId?: string,) => {
+export const getListPackagesQueryKey = (params?: ListPackagesParams,) => {
     return [
-    `/admin/shipments/${shipmentId}/packages`
+    `/admin/packages`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getListPackagesQueryOptions = <TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+export const getListPackagesQueryOptions = <TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(params?: ListPackagesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
 ) => {
 
 const {query: queryOptions, axios: axiosOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListPackagesQueryKey(shipmentId);
+  const queryKey =  queryOptions?.queryKey ?? getListPackagesQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPackages>>> = ({ signal }) => listPackages(shipmentId, { signal, ...axiosOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPackages>>> = ({ signal }) => listPackages(params, { signal, ...axiosOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(shipmentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ListPackagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPackages>>>
@@ -1003,7 +1007,7 @@ export type ListPackagesQueryError = AxiosError<HTTPValidationError>
 
 
 export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
- shipmentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
+ params: undefined |  ListPackagesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listPackages>>,
           TError,
@@ -1013,7 +1017,7 @@ export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
- shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
+ params?: ListPackagesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listPackages>>,
           TError,
@@ -1023,7 +1027,7 @@ export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
- shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+ params?: ListPackagesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -1031,11 +1035,11 @@ export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>
  */
 
 export function useListPackages<TData = Awaited<ReturnType<typeof listPackages>>, TError = AxiosError<HTTPValidationError>>(
- shipmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
+ params?: ListPackagesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPackages>>, TError, TData>>, axios?: AxiosRequestConfig}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListPackagesQueryOptions(shipmentId,options)
+  const queryOptions = getListPackagesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

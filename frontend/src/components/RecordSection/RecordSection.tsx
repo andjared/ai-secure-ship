@@ -1,5 +1,4 @@
 import { Fragment, useState } from 'react'
-import type { ReactNode } from 'react'
 import { RecordForm } from '../RecordForm/RecordForm'
 import type { RecordField } from '../RecordForm/RecordForm'
 import './RecordSection.css'
@@ -10,6 +9,9 @@ interface RecordSectionProps<Name extends string> {
   // Leave out where a tab already names the list.
   title?: string
   fields: RecordField<Name>[]
+  // Shown before `fields` in the form for a new record only, e.g. to pick the
+  // record's parent, which cannot change afterwards.
+  newRecordFields?: RecordField<Name>[]
   // Field values for a new record; also fixes which values a form sends.
   emptyValues: Record<Name, string>
   records: RecordRow<Name>[] | undefined
@@ -24,12 +26,6 @@ interface RecordSectionProps<Name extends string> {
   extraColumn?: { label: string; getValue: (recordId: string) => string }
   onSave: (values: Record<Name, string>, id: string | null) => Promise<unknown>
   onDelete: (id: string) => void
-  // Set all four to let the admin open a record's child records: `children`
-  // are shown directly under the selected row.
-  selectLabel?: string
-  selectedId?: string | null
-  onSelect?: (id: string | null) => void
-  children?: ReactNode
 }
 
 // One list of records with create, edit and delete. Shared by the customer,
@@ -37,6 +33,7 @@ interface RecordSectionProps<Name extends string> {
 export function RecordSection<Name extends string>({
   title,
   fields,
+  newRecordFields = [],
   emptyValues,
   records,
   hasFailed,
@@ -46,10 +43,6 @@ export function RecordSection<Name extends string>({
   extraColumn,
   onSave,
   onDelete,
-  selectLabel,
-  selectedId,
-  onSelect,
-  children,
 }: RecordSectionProps<Name>) {
   // The record being edited, 'new' while creating, null when the form is closed.
   const [editing, setEditing] = useState<RecordRow<Name> | 'new' | null>(null)
@@ -94,9 +87,6 @@ export function RecordSection<Name extends string>({
       return
     }
     onDelete(id)
-    if (id === selectedId) {
-      onSelect?.(null)
-    }
   }
 
   async function handleSave(values: Record<Name, string>) {
@@ -109,7 +99,7 @@ export function RecordSection<Name extends string>({
   const form = editing && (
     <RecordForm
       key={editing === 'new' ? 'new' : editing.id}
-      fields={fields}
+      fields={editing === 'new' ? [...newRecordFields, ...fields] : fields}
       initialValues={getFormValues(editing)}
       onSubmit={handleSave}
       onCancel={() => setEditing(null)}
@@ -165,27 +155,12 @@ export function RecordSection<Name extends string>({
             <tbody>
               {visibleRecords.map((record) => (
                 <Fragment key={record.id}>
-                  <tr
-                    className={
-                      record.id === selectedId ? 'record-section__row--selected' : undefined
-                    }
-                  >
+                  <tr>
                     {extraColumn && <td>{extraColumn.getValue(record.id)}</td>}
                     {fields.map((field) => (
                       <td key={field.name}>{getDisplayValue(field, record)}</td>
                     ))}
                     <td className="record-section__actions">
-                      {selectLabel && (
-                        <button
-                          type="button"
-                          aria-expanded={record.id === selectedId}
-                          onClick={() =>
-                            onSelect?.(record.id === selectedId ? null : record.id)
-                          }
-                        >
-                          {selectLabel}
-                        </button>
-                      )}
                       <button type="button" onClick={() => setEditing(record)}>
                         Edit
                       </button>
@@ -197,13 +172,6 @@ export function RecordSection<Name extends string>({
                   {editing !== 'new' && editing?.id === record.id && (
                     <tr>
                       <td colSpan={columnCount}>{form}</td>
-                    </tr>
-                  )}
-                  {record.id === selectedId && children && (
-                    <tr>
-                      <td className="record-section__children" colSpan={columnCount}>
-                        {children}
-                      </td>
                     </tr>
                   )}
                 </Fragment>

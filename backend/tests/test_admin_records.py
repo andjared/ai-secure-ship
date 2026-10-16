@@ -232,13 +232,43 @@ def test_admin_routes_create_edit_and_delete_records(admin_client):
 
     assert admin_client.delete(f"/admin/customers/{customer_id}").status_code == 204
     assert admin_client.get("/admin/customers").json() == []
-    assert admin_client.get(f"/admin/shipments/{shipment_id}/packages").json() == []
+    assert admin_client.get("/admin/packages").json() == []
 
 
 def test_list_shipments_route_rejects_a_malformed_customer_id(admin_client):
     response = admin_client.get(
         "/admin/shipments", params={"customer_id": "not-a-uuid"}
     )
+
+    assert response.status_code == 422
+
+
+def test_list_packages_route_lists_every_package_or_one_shipments(admin_client):
+    customer_id = admin_client.post("/admin/customers", json=JANE).json()["id"]
+    shipment_ids = [
+        admin_client.post(
+            f"/admin/customers/{customer_id}/shipments",
+            json={**SHIPMENT_JSON, "tracking_number": tracking_number},
+        ).json()["id"]
+        for tracking_number in ["TRACK-1", "TRACK-2"]
+    ]
+    for shipment_id, description in zip(shipment_ids, ["Books", "Lamp"]):
+        admin_client.post(
+            f"/admin/shipments/{shipment_id}/packages",
+            json={**PACKAGE_JSON, "description": description},
+        )
+
+    listed = admin_client.get("/admin/packages").json()
+    one_shipment = admin_client.get(
+        "/admin/packages", params={"shipment_id": shipment_ids[1]}
+    ).json()
+
+    assert [p["description"] for p in listed] == ["Books", "Lamp"]
+    assert [p["description"] for p in one_shipment] == ["Lamp"]
+
+
+def test_list_packages_route_rejects_a_malformed_shipment_id(admin_client):
+    response = admin_client.get("/admin/packages", params={"shipment_id": "not-a-uuid"})
 
     assert response.status_code == 422
 
